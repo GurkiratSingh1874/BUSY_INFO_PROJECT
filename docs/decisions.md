@@ -1,36 +1,44 @@
 # Decisions
 
-Log the decisions that actually shaped this codebase — the ones where a real alternative existed and
-you picked one. At least five entries. For each: what you chose, what you rejected, and why. At least
-one entry must be a decision you later reversed — say what changed your mind. It can be any entry
-below, not necessarily the last one; add a **Later reversed:** line to whichever one it is.
+Log of major technical and architectural decisions made during development.
 
-## Decision 1
+---
 
-- **Chose:**
-- **Rejected:**
-- **Why:**
+## Decision 1: Single-Unit Server Deployment (Unified Hosting)
 
-## Decision 2
+* **Chose**: Compiling React assets and serving them statically from the Express backend on a single Render instance.
+* **Rejected**: Deploying the frontend client separately on Vercel and the backend API on Render.
+* **Why**: Separate hosting requires configuring Cross-Origin Resource Sharing (CORS) security headers and managing two configuration dashboards. More importantly, free hosting tiers sleep when idle. If hosted separately, a user loading the website would have to wait for the Vercel app to boot, which would then trigger the Render API, forcing a double cold-start latency of up to 2 minutes. A unified server solves this and simplifies configuration.
+* **Later reversed**: We initially set up separate `frontend/` and `backend/` scripts expecting to run them on separate platforms, but reversed this choice for deployment once we weighed the cold-start latencies and CORS friction.
 
-- **Chose:**
-- **Rejected:**
-- **Why:**
+---
 
-## Decision 3
+## Decision 2: Preseeded Database Accounts
 
-- **Chose:**
-- **Rejected:**
-- **Why:**
+* **Chose**: Seeding a preset group of accounts (1 Manager, 2 Members) automatically on database startup.
+* **Rejected**: Building a public signup/registration screen.
+* **Why**: The tracker is designed as a private, internal services company tool; arbitrary public registration is not realistic for this scenario. Limiting access to pre-seeded credentials satisfies the security constraints, simplifies user management, and avoids spending 1.5 hours building registration forms, verification, and security rules.
 
-## Decision 4
+---
 
-- **Chose:**
-- **Rejected:**
-- **Why:**
+## Decision 3: HTTP-Only Cookies for Session Tokens
 
-## Decision 5
+* **Chose**: Storing JWT authentication tokens inside secure, HTTP-Only, SameSite cookies.
+* **Rejected**: Storing JWT tokens in the browser's `localStorage` and attaching them to the HTTP `Authorization` request header.
+* **Why**: Storing tokens in `localStorage` exposes them to Cross-Site Scripting (XSS) attacks—any rogue script injected into the client page can read the token and hijack the user session. HTTP-Only cookies are protected by the browser and cannot be read by JavaScript, offering a much more secure and professional authentication layout.
 
-- **Chose:**
-- **Rejected:**
-- **Why:**
+---
+
+## Decision 4: Audit History via a Separate Collection
+
+* **Chose**: Saving audit timeline events in a separate, dedicated `tasktimelines` collection with Mongoose hooks blocking updates/deletions.
+* **Rejected**: Nesting the timeline events as a sub-document array inside each Task document.
+* **Why**: While embedding is easier, task audit histories grow continuously with comments and updates. MongoDB documents have a hard size limit of 16MB. A task with many comments or modifications could push the document size limit or slow down index operations. A separate timeline collection keeps the main `tasks` documents compact and search indexing fast.
+
+---
+
+## Decision 5: Native CSS variables over Tailwind CSS
+
+* **Chose**: Custom utility styling classes and CSS custom properties (variables) defined in a clean `index.css` file.
+* **Rejected**: Tailwind CSS framework.
+* **Why**: Introducing Tailwind adds compilation dependencies, configuration files (`tailwind.config.js`), and bloated HTML utility strings that are harder to audit in a simple workspace review. Vanilla CSS is lightweight, has zero compilation overhead, and allows us to build a custom responsive layout with high-quality aesthetics.

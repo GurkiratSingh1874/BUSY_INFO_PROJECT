@@ -117,3 +117,82 @@ This document logs the exact prompts used to direct the AI assistant during deve
 ### What you corrected
 * Encountered Windows PowerShell Execution Policy issue when installing packages; corrected workflow by executing installations through `cmd.exe /c "npm install"`.
 * Addressed loopback address routing: loopback API fetches defaulted to IPv6 `[::1]`, which Node.js did not bind to, and resolved this by fetching via IPv4 loopback `127.0.0.1`.
+
+---
+
+## 3. Implementing Milestones 2 & 3 (Database Schema & Authentication)
+
+### Prompt
+> Implement Milestones 2 and 3 only.
+> 
+> DATABASE:
+> Create the minimum database schema required by the README.
+> 
+> Before coding, verify that the schema supports:
+> - users
+> - manager/member roles
+> - projects
+> - project membership
+> - tasks
+> - task assignments
+> - task dependencies
+> - immutable task history
+> - comments/timeline
+> - overdue alert dismissal state
+> 
+> Use the simplest sensible relational/document design based on our chosen database.
+> 
+> Do not create excess tables/collections for hypothetical future features.
+> and we have to connect mongo atlas database with this project tell me steps and take connection string from me and connect that 
+> 
+> AUTHENTICATION:
+> Implement:
+> - email/password login
+> - secure password handling
+> - session/token authentication appropriate for our stack
+> - manager/member roles
+> 
+> AUTHORIZATION:
+> This is critical.
+> 
+> Permissions must be enforced on the SERVER.
+> 
+> A member must not be able to bypass the UI and call an API to:
+> - create/archive projects
+> - change project membership
+> - delete tasks
+> - access projects they do not belong to
+> 
+> Do not rely on frontend hiding buttons.
+> 
+> Create simple reusable authorization checks on the backend rather than duplicating permission logic everywhere.
+> 
+> Create demo users eventually, but do not expose passwords in source code.
+> 
+> Add/update:
+> - docs/schema.md
+> - docs/architecture.md
+> - docs/decisions.md
+> - docs/ai-prompts.md
+> 
+> Test authentication and authorization manually and with automated tests where practical.
+> 
+> Then:
+> 1. show me what was implemented
+> 2. explain the important security decisions
+> 3. run checks/tests
+> 4. prepare a meaningful Git commit
+> 5. push after confirmation if needed
+> 
+> implement only tilll login where admin , worker have different credentials to login in and can open different webpage after login and user can't bypass login and we can seed the user also . Today tilll this is enough . But main thing is to connect mongodb
+
+### What you got
+* MongoDB Mongoose Models: User, Project, Task, TaskTimeline, and AlertDismissal (with pre-hooks enforcing timeline immutability).
+* JWT auth system: Cookie signature and verification middlewares in `backend/middleware/auth.js`.
+* Backend auth endpoints: `/login`, `/logout`, `/me` with secure HTTP-only cookies in `backend/routes/auth.js`.
+* Pre-seeded default users script in `backend/utils/seed.js` executing on server boot.
+* Frontend React login layout and session logic routing to a role-based Dashboard Workspace card panel.
+* Updated architectural logs in `docs/schema.md`, `docs/decisions.md`, and `docs/ai-prompts.md`.
+
+### What you corrected
+* Configured JWT secrets and database credentials to load securely from `.env` variables to align with zero repository exposure guidelines.

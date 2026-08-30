@@ -4,8 +4,16 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
+const connectDB = require('./config/db');
+const seedUsers = require('./utils/seed');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Connect to Database and Seed Users
+connectDB().then(() => {
+  seedUsers();
+});
 
 // Middleware
 app.use(cors({
@@ -15,6 +23,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// API Routes
+app.use('/api/auth', require('./routes/auth'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -31,16 +42,14 @@ app.use(express.static(frontendDistPath));
 
 // Catch-all route to serve the React index.html for client-side routing
 app.get('*', (req, res) => {
-  // Check if we are serving from build
   const indexPath = path.join(frontendDistPath, 'index.html');
-  // Fallback to sending a simple HTML page if index.html doesn't exist yet
   res.sendFile(indexPath, (err) => {
     if (err) {
       res.status(200).send(`
         <!DOCTYPE html>
         <html lang="en">
         <head>
-          <meta charset="UTF-8">
+          <meta charset="UTF-8" />
           <title>Project & Task Tracker</title>
           <style>
             body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0f172a; color: #f8fafc; }
