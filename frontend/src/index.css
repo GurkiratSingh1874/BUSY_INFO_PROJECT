@@ -1,0 +1,255 @@
+/* CSS Design System - Project & Task Tracker */
+
+:root {
+  /* HSL Color Palette */
+  --bg-primary: 222 47% 11%;      /* Deep space dark */
+  --bg-secondary: 223 47% 16%;    /* Card dark */
+  --bg-tertiary: 224 40% 20%;     /* Hover dark */
+  
+  --border-color: 223 30% 22%;    /* Subtle borders */
+  --border-glow: 199 89% 48%;     /* Cyan accent */
+  
+  --text-primary: 210 40% 98%;    /* Clean white */
+  --text-secondary: 215 20% 65%;  /* Muted gray */
+  --text-muted: 215 15% 45%;     /* Darker gray */
+  
+  --cyan: 199 89% 48%;
+  --emerald: 142 70% 45%;
+  --red: 350 89% 60%;
+  --yellow: 45 93% 47%;
+  
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: hsl(var(--bg-primary));
+  color: hsl(var(--text-primary));
+  font-family: var(--font-family);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(var(--cyan), 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(var(--emerald), 0.05) 0px, transparent 50%);
+}
+
+.app-container {
+  width: 100%;
+  max-width: 680px;
+  padding: 20px;
+}
+
+/* Glassmorphism Card styling */
+.glass-card {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.header {
+  margin-bottom: 40px;
+}
+
+.logo-badge {
+  display: inline-flex;
+  padding: 16px;
+  border-radius: 50%;
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  margin-bottom: 20px;
+  color: hsl(var(--cyan));
+}
+
+.icon-pulse {
+  width: 32px;
+  height: 32px;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #fff 0%, hsl(var(--text-secondary)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  color: hsl(var(--text-secondary));
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Status Grid layout */
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 580px) {
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.status-item {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 12px;
+  padding: 24px;
+  text-align: left;
+  transition: var(--transition-smooth);
+}
+
+.status-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(14, 165, 233, 0.35);
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.05);
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.status-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.text-cyan {
+  color: hsl(var(--cyan));
+}
+
+.text-emerald {
+  color: hsl(var(--emerald));
+}
+
+.text-red {
+  color: hsl(var(--red));
+}
+
+.status-item h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: hsl(var(--text-primary));
+}
+
+/* Status dots */
+.indicator-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-active {
+  background-color: hsl(var(--emerald));
+  box-shadow: 0 0 10px hsl(var(--emerald));
+  animation: glow-emerald 1.5s infinite alternate;
+}
+
+.dot-loading {
+  background-color: hsl(var(--yellow));
+  box-shadow: 0 0 10px hsl(var(--yellow));
+  animation: glow-yellow 1.5s infinite alternate;
+}
+
+.dot-error {
+  background-color: hsl(var(--red));
+  box-shadow: 0 0 10px hsl(var(--red));
+  animation: glow-red 1.5s infinite alternate;
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.description {
+  font-size: 0.8rem;
+  color: hsl(var(--text-muted));
+  line-height: 1.4;
+}
+
+.success-message {
+  font-size: 0.85rem;
+  color: hsl(var(--text-secondary));
+  margin-bottom: 8px;
+}
+
+.error-message {
+  font-size: 0.85rem;
+  color: hsl(var(--red));
+  margin-bottom: 12px;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.metadata-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: hsl(var(--cyan));
+  background: rgba(14, 165, 233, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.footer {
+  font-size: 0.75rem;
+  color: hsl(var(--text-muted));
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 20px;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.8; }
+}
+
+@keyframes glow-emerald {
+  from { box-shadow: 0 0 4px hsl(var(--emerald)); }
+  to { box-shadow: 0 0 12px hsl(var(--emerald)); }
+}
+
+@keyframes glow-yellow {
+  from { box-shadow: 0 0 4px hsl(var(--yellow)); }
+  to { box-shadow: 0 0 12px hsl(var(--yellow)); }
+}
+
+@keyframes glow-red {
+  from { box-shadow: 0 0 4px hsl(var(--red)); }
+  to { box-shadow: 0 0 12px hsl(var(--red)); }
+}
