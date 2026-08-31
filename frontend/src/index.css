@@ -1885,3 +1885,280 @@ body {
   color: hsl(var(--text-primary));
 }
 
+/* ==========================================================================
+   Filter & Search Toolbar Styles (README Goal 6)
+   ========================================================================== */
+.filter-controls-card {
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-form-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .search-form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.filter-selectors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.filter-item label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: hsl(var(--text-muted));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-item select,
+.filter-select-inline {
+  background-color: rgba(15, 23, 42, 0.6);
+  border: 1px solid hsl(var(--border-color));
+  color: hsl(var(--text-primary));
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.filter-item select:focus,
+.filter-select-inline:focus {
+  outline: none;
+  border-color: hsl(var(--cyan));
+}
+
+.filter-item-checkbox {
+  display: flex;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.overdue-text {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.results-meta-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.results-count-text {
+  font-size: 0.85rem;
+  color: hsl(var(--text-secondary));
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: hsl(var(--text-muted));
+}
+
+.page-size-selector select {
+  background-color: rgba(15, 23, 42, 0.6);
+  border: 1px solid hsl(var(--border-color));
+  color: hsl(var(--text-primary));
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+/* ==========================================================================
+   Task Data Table Styles
+   ========================================================================== */
+.task-table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.tasks-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tasks-data-table th {
+  background: rgba(15, 23, 42, 0.7);
+  padding: 12px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: hsl(var(--text-muted));
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tasks-data-table td {
+  padding: 14px 16px;
+  font-size: 0.85rem;
+  color: hsl(var(--text-secondary));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  vertical-align: middle;
+}
+
+.task-row-clickable {
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.task-row-clickable:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cell-task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 320px;
+}
+
+.table-task-title {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.88rem;
+}
+
+.table-task-desc {
+  font-size: 0.75rem;
+  color: hsl(var(--text-muted));
+}
+
+.due-date-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.overdue-badge-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.overdue-badge-pill-mini {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+
+/* ==========================================================================
+   Pagination Controls
+   ========================================================================== */
+.pagination-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-pagination {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid hsl(var(--border-color));
+  color: hsl(var(--text-secondary));
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition-smooth);
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.btn-pagination:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-numbers-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.btn-page-number {
+  background: transparent;
+  border: 1px solid transparent;
+  color: hsl(var(--text-secondary));
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.btn-page-number:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.btn-page-active {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border-color: rgba(14, 165, 233, 0.3) !important;
+  color: hsl(var(--cyan)) !important;
+}
+
+.pagination-ellipsis {
+  color: hsl(var(--text-muted));
+  padding: 0 4px;
+}
+
+.text-xs { font-size: 0.72rem; }
+.text-red { color: #f87171 !important; }
+.font-bold { font-weight: 700 !important; }
+.mb-20 { margin-bottom: 20px; }
+.mt-12 { margin-top: 12px; }
+.mt-20 { margin-top: 20px; }
+
+

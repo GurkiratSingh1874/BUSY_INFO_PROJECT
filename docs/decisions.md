@@ -53,3 +53,14 @@ Log of major technical and architectural decisions made during development.
   1. **Security & Data Integrity**: Client interfaces are fundamentally untrusted; users or malicious actors can issue direct `PUT /api/tasks/:id` HTTP calls attempting to bypass the sequential workflow (e.g., jumping directly from Backlog to Done).
   2. **Single Source of Truth**: Isolating the transition map (`ALLOWED_TRANSITIONS`), unblocking restoration logic (`preBlockedStatus`), and dependency resolution checks into a standalone service makes the lifecycle rules easy to test in isolation (via both unit tests and integration tests) and straightforward to explain in an interview.
   3. **Explicit Error Feedback**: Rather than returning a generic 400 Bad Request error, the validator returns human-readable explanations detailing why a specific transition was rejected (e.g., distinguishing between skipped transitions, illegal backward steps, invalid unblocking targets, and unfinished blocking dependencies with exact blocker titles).
+
+---
+
+## Decision 7: Server-Side Query Execution for Search, Filtering, and Pagination
+
+* **Chose**: Executing all text search, multi-criteria filtering, sorting, and pagination strictly on the server within MongoDB queries.
+* **Rejected**: Loading the entire task dataset into the client and performing filtering/sorting in JavaScript memory.
+* **Why**:
+  1. **Scalability & Performance**: Client-side filtering fails as datasets grow beyond a few hundred records, causing high memory usage, sluggish UI re-renders, and excessive network bandwidth consumption.
+  2. **Security & Data Scoping**: Client-side filtering requires sending all tasks over the wire, which risks leaking confidential tasks from unauthorized projects. Performing filtering and scoping on the server ensures members only receive tasks they have explicit permission to view.
+  3. **Accurate Pagination**: By combining `Task.countDocuments(query)` with `.skip().limit()`, the client receives accurate match totals and page counts without over-fetching.

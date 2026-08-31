@@ -20,61 +20,145 @@ const getArrayDiff = (oldArr, newArr) => {
   return { added, removed };
 };
 
-// @desc    Get all tasks (with basic project and assignee filters, scoped by access permissions)
+// @desc    Get all tasks with server-side text search, filtering, sorting, and pagination (README Goal 6)
 // @route   GET /api/tasks
-// @access  Private
+// @access  Private (Scoped by project access permissions)
 router.get('/', protect, async (req, res) => {
   try {
+    const {
+      search,
+      projectId,
+      status,
+      assigneeId,
+      priority,
+      overdue,
+      myTasks,
+      includeArchived,
+      sortBy = 'updatedAt',
+      order = 'desc',
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+    const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    // 1. Determine Allowed Projects based on user role & membership
+    let projectScopeQuery = {};
+    if (req.user.role !== 'manager') {
+      projectScopeQuery.members = req.user._id;
+    }
+    if (includeArchived !== 'true') {
+      projectScopeQuery.isArchived = { $ne: true };
+    }
+
+    const allowedProjects = await Project.find(projectScopeQuery).select('_id');
+    const allowedProjectIds = allowedProjects.map(p => p._id);
+
     let query = {};
 
-    // Scope search results to user's assigned projects if not a manager
-    if (req.user.role !== 'manager') {
-      const projects = await Project.find({ members: req.user._id });
-      const projectIds = projects.map(p => p._id);
-      query.projectId = { $in: projectIds };
-    }
-
-    // Apply filters
-    if (req.query.projectId) {
-      // If filtering by a specific project, verify membership
-      if (req.user.role !== 'manager') {
-        const belongs = query.projectId && query.projectId.$in.some(id => id.toString() === req.query.projectId);
-        if (!belongs) {
-          return res.status(403).json({ success: false, error: 'Access denied to this project' });
-        }
+    // 2. Project Filter
+    if (projectId) {
+      const isAllowed = allowedProjectIds.some(id => id.toString() === projectId);
+      if (!isAllowed) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: You do not have permission to view tasks for this project.',
+        });
       }
-      query.projectId = req.query.projectId;
+      query.projectId = projectId;
+    } else {
+      query.projectId = { $in: allowedProjectIds };
     }
 
-    if (req.query.status) {
-      query.status = req.query.status;
+    // 3. Text Search over Title and Description
+    if (search && search.trim()) {
+      const trimmed = search.trim();
+      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
+      query.$or = [
+        { title: { $regex: regex } },
+        { description: { $regex: regex } },
+      ];
     }
 
-    if (req.query.assigneeId) {
-      query.assignees = req.query.assigneeId;
+    // 4. Status Filter
+    if (status) {
+      query.status = status;
     }
 
-    // "My Tasks" quick view shortcut
-    if (req.query.myTasks === 'true') {
+    // 5. Assignee Filter
+    if (assigneeId) {
+      query.assignees = assigneeId;
+    }
+
+    // 6. "My Tasks" Filter Shortcut
+    if (myTasks === 'true') {
       query.assignees = req.user._id;
-      // Ignore completed tasks by default for personal list
-      if (!req.query.status) {
+      if (!status) {
         query.status = { $ne: 'done' };
       }
     }
 
-    const tasks = await Task.find(query)
-      .populate('projectId', 'key name isArchived')
-      .populate('assignees', 'name email role')
-      .populate('blockers', 'title status')
-      .sort({ updatedAt: -1 });
+    // 7. Priority Filter
+    if (priority) {
+      query.priority = priority;
+    }
 
-    // Filter out tasks of archived projects by default
-    const filteredTasks = tasks.filter(task => task.projectId && !task.projectId.isArchived);
+    // 8. Overdue Filter
+    if (overdue === 'true') {
+      query.dueDate = { $lt: new Date(), $ne: null };
+      if (!status) {
+        query.status = { $ne: 'done' };
+      }
+    }
 
-    res.status(200).json({ success: true, count: filteredTasks.length, data: filteredTasks });
+    // 9. Server-Side Sorting
+    let sortObj = {};
+    const sortDirection = order === 'asc' ? 1 : -1;
+
+    if (sortBy === 'dueDate') {
+      sortObj = { dueDate: sortDirection, createdAt: -1 };
+    } else if (sortBy === 'priority') {
+      sortObj = { priority: sortDirection, updatedAt: -1 };
+    } else if (sortBy === 'createdAt') {
+      sortObj = { createdAt: sortDirection };
+    } else {
+      sortObj = { updatedAt: sortDirection };
+    }
+
+    // 10. Execute Server-Side Query and Count in parallel
+    const [total, tasks] = await Promise.all([
+      Task.countDocuments(query),
+      Task.find(query)
+        .populate('projectId', 'key name isArchived')
+        .populate('assignees', 'name email role')
+        .populate('blockers', 'title status')
+        .sort(sortObj)
+        .skip(skip)
+        .limit(parsedLimit),
+    ]);
+
+    const totalPages = Math.ceil(total / parsedLimit) || 1;
+
+    res.status(200).json({
+      success: true,
+      pagination: {
+        total,
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages,
+        hasPrevPage: parsedPage > 1,
+        hasNextPage: parsedPage < totalPages,
+      },
+      data: tasks,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Error fetching tasks: ' + error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Error querying tasks: ' + error.message,
+    });
   }
 });
 

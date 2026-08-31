@@ -353,3 +353,68 @@ This document logs the exact prompts used to direct the AI assistant during deve
 
 ### What you corrected
 * Refined `validateTransition` to return distinct, context-specific error messages for every type of illegal transition (e.g. forward skips, backward regressions, unblocking target mismatches, and blocked-from-backlog rejections).
+
+---
+
+## 6. Implementing Finding Things — Server-Side Search, Filter & Pagination (README Goal 6 & 5)
+
+### Prompt
+> Implement README goal 6 and complete the "My Tasks" functionality from goal 5.
+> 
+> Create a task list where users can see all tasks they are allowed to see.
+> 
+> Support:
+> - text search across title and description
+> - project filter
+> - status filter
+> - assignee filter
+> - priority filter
+> - overdue filter
+> - sorting by due date
+> - sorting by priority
+> - sorting by last update
+> - pagination
+> - total result count
+> 
+> CRITICAL:
+> Filtering, searching, sorting and pagination MUST happen on the SERVER.
+> 
+> Do not fetch every task into the browser and filter it with JavaScript.
+> 
+> Design the API with query parameters or an equivalent clean approach.
+> 
+> Also create a simple "My Tasks" view showing the logged-in user's assigned tasks across projects.
+> 
+> Keep the UI straightforward. Do not build an overly complicated data-grid system.
+> 
+> Test:
+> - combinations of filters
+> - pagination
+> - search
+> - sorting
+> - permission boundaries
+> - My Tasks
+> 
+> Update relevant documentation.
+> 
+> Commit and push this milestone.
+
+### What you got
+* **Server-Side Query Pipeline** (`backend/routes/tasks.js` `GET /api/tasks`):
+  * Regex search matching `title` or `description`.
+  * Scoped project filtering with `403 Forbidden` checks on unauthorized project queries.
+  * Multi-attribute filtering on `status`, `priority`, `assigneeId`, `overdue`, and `myTasks`.
+  * Server-side sorting by `dueDate`, `priority`, `updatedAt`, and `createdAt`.
+  * Server-side pagination with `skip`, `limit`, and parallel `countDocuments(query)` execution.
+* **Frontend All-Tasks View** (`frontend/src/pages/TaskList.jsx`):
+  * Filter toolbar with live search, dropdown selects, overdue checkbox, and clear button.
+  * Responsive dark data table rendering project tags, descriptions, status badges, priority pills, and overdue indicators.
+  * Full pagination bar showing match totals and page selectors.
+* **Enhanced My Tasks View** (`frontend/src/pages/MyTasks.jsx`):
+  * Connected directly to personal server queries with search, status/priority filtering, and due date sorting.
+* **Automated Integration Test Suite** (`backend/tests/search.test.js`):
+  * 8 automated tests covering text search, single/combined filters, pagination boundaries, sorting orders, project access isolation, and personal task scoping.
+* Updated architectural documentations in `docs/decisions.md` (Decision 7) and `docs/ai-prompts.md`.
+
+### What you corrected
+* Used escaped regex patterns to prevent regex injection crashes on text searches containing special symbols.

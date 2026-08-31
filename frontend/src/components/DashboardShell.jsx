@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { LogOut, User, Folder, CheckSquare } from 'lucide-react';
+import { LogOut, Folder, ListTodo, CheckSquare } from 'lucide-react';
 import Projects from '../pages/Projects';
 import ProjectBoard from '../pages/ProjectBoard';
+import TaskList from '../pages/TaskList';
 import MyTasks from '../pages/MyTasks';
 
 function DashboardShell({ user, onLogout }) {
-  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'my-tasks' | 'board'
+  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'all-tasks' | 'my-tasks' | 'board'
   const [selectedProject, setSelectedProject] = useState(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
@@ -79,6 +80,17 @@ function DashboardShell({ user, onLogout }) {
 
           <button
             onClick={() => {
+              setActiveTab('all-tasks');
+              setSelectedProject(null);
+            }}
+            className={`nav-tab-btn ${activeTab === 'all-tasks' ? 'tab-active' : ''}`}
+          >
+            <ListTodo size={18} />
+            <span>All Tasks</span>
+          </button>
+
+          <button
+            onClick={() => {
               setActiveTab('my-tasks');
               setSelectedProject(null);
             }}
@@ -126,6 +138,10 @@ function DashboardShell({ user, onLogout }) {
               onBack={handleBackToProjects}
               currentUser={user}
             />
+          )}
+
+          {activeTab === 'all-tasks' && (
+            <TaskList currentUser={user} />
           )}
 
           {activeTab === 'my-tasks' && (
