@@ -103,18 +103,6 @@ function Login({ onLoginSuccess }) {
             )}
           </button>
         </form>
-
-        <div className="demo-credentials-box">
-          <h4>Demo Credentials</h4>
-          <div className="demo-row">
-            <strong>Manager (Admin):</strong>
-            <span>manager@example.com / manager123</span>
-          </div>
-          <div className="demo-row">
-            <strong>Member (Worker):</strong>
-            <span>member1@example.com / member123</span>
-          </div>
-        </div>
       </div>
     </div>
   );
