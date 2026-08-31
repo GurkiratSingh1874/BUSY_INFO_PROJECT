@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { LogOut, User, FolderPlus, Trash2, CheckSquare, Layers, Shield, UserCheck } from 'lucide-react';
+import { LogOut, User, Folder, CheckSquare } from 'lucide-react';
+import Projects from '../pages/Projects';
+import ProjectBoard from '../pages/ProjectBoard';
+import MyTasks from '../pages/MyTasks';
 
 function DashboardShell({ user, onLogout }) {
+  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'my-tasks' | 'board'
+  const [selectedProject, setSelectedProject] = useState(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
   const handleLogoutClick = async () => {
@@ -20,122 +25,114 @@ function DashboardShell({ user, onLogout }) {
     }
   };
 
+  const handleSelectProject = (project) => {
+    setSelectedProject(project);
+    setActiveTab('board');
+  };
+
+  const handleBackToProjects = () => {
+    setSelectedProject(null);
+    setActiveTab('projects');
+  };
+
   const isManager = user.role === 'manager';
 
   return (
-    <div className="dashboard-layout">
-      {/* Top Navigation Header */}
-      <header className="dashboard-header">
-        <div className="brand">
-          <span className="brand-logo">🎯</span>
+    <div className="app-shell-layout">
+      {/* Sidebar Navigation */}
+      <aside className="sidebar-nav">
+        <div className="sidebar-brand">
+          <span className="logo-emoji">🎯</span>
           <h2>Tracker Pro</h2>
         </div>
-        <div className="header-actions">
-          <div className="user-profile">
-            <User className="profile-icon" />
-            <div className="profile-details">
-              <span className="user-name">{user.name}</span>
-              <span className={`role-badge ${isManager ? 'role-manager' : 'role-member'}`}>
-                {isManager ? 'Manager (Admin)' : 'Member (Worker)'}
-              </span>
-            </div>
+
+        {/* User Card */}
+        <div className="sidebar-user-card">
+          <div className="user-avatar-circle">
+            {user.name
+              ?.split(' ')
+              .map(w => w[0])
+              .join('')
+              .substring(0, 2)
+              .toUpperCase()}
           </div>
+          <div className="user-info-text">
+            <span className="profile-name">{user.name}</span>
+            <span className={`role-badge ${isManager ? 'role-manager' : 'role-member'}`}>
+              {isManager ? 'Manager' : 'Member'}
+            </span>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <nav className="nav-tabs-list">
+          <button
+            onClick={() => {
+              setActiveTab('projects');
+              setSelectedProject(null);
+            }}
+            className={`nav-tab-btn ${activeTab === 'projects' || activeTab === 'board' ? 'tab-active' : ''}`}
+          >
+            <Folder size={18} />
+            <span>Projects</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('my-tasks');
+              setSelectedProject(null);
+            }}
+            className={`nav-tab-btn ${activeTab === 'my-tasks' ? 'tab-active' : ''}`}
+          >
+            <CheckSquare size={18} />
+            <span>My Tasks</span>
+          </button>
+        </nav>
+
+        {/* Sidebar Footer Logout */}
+        <div className="sidebar-footer">
           <button
             onClick={handleLogoutClick}
-            className="btn-logout"
+            className="btn-sidebar-logout"
             disabled={logoutLoading}
-            title="Log Out"
           >
-            <LogOut className="logout-icon" />
+            <LogOut size={16} />
             <span>Sign Out</span>
           </button>
         </div>
-      </header>
+      </aside>
 
-      {/* Main Workspace Body */}
-      <main className="dashboard-content">
-        {isManager ? (
-          /* Manager / Admin View */
-          <div className="role-view fade-in">
-            <div className="welcome-banner manager-banner">
-              <Shield className="banner-icon" />
-              <div>
-                <h3>Admin Manager Workspace</h3>
-                <p>You have full company portfolio oversight. Access controls and deletions are enabled.</p>
-              </div>
-            </div>
-
-            <div className="grid-cards">
-              <div className="action-card">
-                <div className="card-header">
-                  <FolderPlus className="text-cyan" />
-                  <h4>Project Management</h4>
-                </div>
-                <p>Create new client scopes, customize key identifiers, and toggle project archives.</p>
-                <div className="tag-allowed">Allowed for Manager</div>
-              </div>
-
-              <div className="action-card">
-                <div className="card-header">
-                  <UserCheck className="text-cyan" />
-                  <h4>Project Membership</h4>
-                </div>
-                <p>Add and remove workers from active projects. Automatically unassigns tasks on removal.</p>
-                <div className="tag-allowed">Allowed for Manager</div>
-              </div>
-
-              <div className="action-card">
-                <div className="card-header">
-                  <Trash2 className="text-red" />
-                  <h4>Task Deletion</h4>
-                </div>
-                <p>Purge stalled or redundant tasks permanently from project records.</p>
-                <div className="tag-allowed text-red">Manager Override Action</div>
-              </div>
-            </div>
+      {/* Main Panel Content Area */}
+      <div className="main-panel">
+        <header className="main-panel-header">
+          <div className="system-status-indicator">
+            <span className="dot dot-active"></span>
+            <span className="status-label">Live Atlas Connected</span>
           </div>
-        ) : (
-          /* Member / Worker View */
-          <div className="role-view fade-in">
-            <div className="welcome-banner member-banner">
-              <Layers className="banner-icon" />
-              <div>
-                <h3>Worker Task Portal</h3>
-                <p>Accessing projects assigned to you. Track your load and update tasks.</p>
-              </div>
-            </div>
+        </header>
 
-            <div className="grid-cards">
-              <div className="action-card disabled-card">
-                <div className="card-header">
-                  <FolderPlus className="text-muted-icon" />
-                  <h4>Project Management</h4>
-                </div>
-                <p>Create new client scopes, customize key identifiers, and toggle project archives.</p>
-                <div className="tag-blocked">Blocked for Workers</div>
-              </div>
+        <div className="main-panel-content">
+          {activeTab === 'projects' && (
+            <Projects
+              currentUser={user}
+              onSelectProject={handleSelectProject}
+              activeProjectId={selectedProject?._id}
+            />
+          )}
 
-              <div className="action-card disabled-card">
-                <div className="card-header">
-                  <UserCheck className="text-muted-icon" />
-                  <h4>Project Membership</h4>
-                </div>
-                <p>Add and remove workers from active projects. Automatically unassigns tasks on removal.</p>
-                <div className="tag-blocked">Blocked for Workers</div>
-              </div>
+          {activeTab === 'board' && selectedProject && (
+            <ProjectBoard
+              project={selectedProject}
+              onBack={handleBackToProjects}
+              currentUser={user}
+            />
+          )}
 
-              <div className="action-card">
-                <div className="card-header">
-                  <CheckSquare className="text-emerald" />
-                  <h4>Task Execution</h4>
-                </div>
-                <p>View assigned tickets, post comments/blockers, and transition tasks through sequential states.</p>
-                <div className="tag-allowed text-emerald">Allowed for Worker</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
+          {activeTab === 'my-tasks' && (
+            <MyTasks currentUser={user} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -98,4 +98,16 @@ router.get('/me', protect, (req, res) => {
   });
 });
 
+// @desc    Get all users in the system
+// @route   GET /api/auth/users
+// @access  Private
+router.get('/users', protect, async (req, res) => {
+  try {
+    const users = await User.find({}).select('name email role');
+    res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Error fetching users: ' + error.message });
+  }
+});
+
 module.exports = router;

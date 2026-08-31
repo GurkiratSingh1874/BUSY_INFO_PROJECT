@@ -196,3 +196,88 @@ This document logs the exact prompts used to direct the AI assistant during deve
 
 ### What you corrected
 * Configured JWT secrets and database credentials to load securely from `.env` variables to align with zero repository exposure guidelines.
+
+---
+
+## 4. Implementing Projects and Tasks (Milestones 4, 5, and 6)
+
+### Prompt
+> Implement the project and task functionality now.
+> 
+> Follow the README exactly.
+> 
+> PROJECTS:
+> Managers can:
+> - create projects
+> - edit projects
+> - archive projects
+> - restore projects
+> - manage project members
+> 
+> Projects need:
+> - short key
+> - name
+> - description
+> - owner
+> 
+> ARCHIVING:
+> Archiving must hide the project from default views without deleting its data or tasks.
+> 
+> TASKS:
+> Implement:
+> - title
+> - description
+> - priority
+> - optional due date
+> - project relationship
+> - dependencies/blocking tasks
+> - multiple assignees
+> 
+> Only project members can be assigned to project tasks.
+> 
+> If a person is removed from a project:
+> - automatically unassign them from that project's tasks.
+> 
+> Members must only see projects they belong to.
+> 
+> Managers can delete tasks.
+> Members cannot.
+> 
+> Keep the UI simple and clean.
+> 
+> Do not build the dashboard, bulk actions, alerts or advanced filtering yet.
+> 
+> Focus on making projects and tasks solid.
+> 
+> IMPORTANT:
+> All important authorization and validation must happen on the backend.
+> 
+> After implementation:
+> - test the important permission cases
+> - test project archive/restore
+> - test assignment restrictions
+> - update documentation
+> - update ai-prompts.md
+> 
+> create a meaningful Git commit
+> - push it if GitHub is already configured
+
+### What you got
+* **Backend Routers**:
+  * `backend/routes/projects.js` exposing project CRUD, toggling `isArchived`, adding members, and removing members. On member removal, updates tasks in Mongoose to pull the worker ID.
+  * `backend/routes/tasks.js` implementing task CRUD, status transitions sequential checker, blocker check constraint, and appending timeline changes.
+* **Server Utilities**:
+  * `backend/utils/lifecycle.js` evaluating allowed states (`Backlog` ➔ `In Progress` ➔ `In Review` ➔ `Done` or `Blocked`).
+  * `backend/utils/timeline.js` compiling task activity logging records.
+* **Frontend Pages & Components**:
+  * `Projects.jsx` (Client Projects directory).
+  * `ProjectBoard.jsx` (Kanban Board showing columns Backlog, In Progress, In Review, Done, Blocked).
+  * `MyTasks.jsx` (List of active tickets assigned to the current user).
+  * `CreateProjectModal.jsx`, `ManageMembersModal.jsx`, `CreateTaskModal.jsx`, `TaskDetailsDrawer.jsx`.
+* **Automated Integration Tests**:
+  * `backend/tests/api.test.js` verifying authentication, role access blocks, project scoping, blocker dependencies, transition validation, unassignment cascades, and deletion restrictions.
+* Updated architectural documentations in `docs/architecture.md` and `docs/ai-prompts.md`.
+
+### What you corrected
+* Implemented raw header extraction for Node fetch cookie reading inside our custom test runner.
+* Handled port cleanup: noticed diagnostic scripts grab port 5000 and throw `EADDRINUSE` if the server is started multiple times in the background; resolved by managing active background processes.
