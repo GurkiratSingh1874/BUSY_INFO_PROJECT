@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Plus, RefreshCw, AlertTriangle, ShieldCheck, HelpCircle } from 'lucide-react';
+import { ChevronLeft, Plus, RefreshCw, AlertTriangle, ShieldCheck, HelpCircle, Loader2 } from 'lucide-react';
 import CreateTaskModal from '../components/CreateTaskModal';
 import TaskDetailsDrawer from '../components/TaskDetailsDrawer';
 
