@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, Archive, RotateCcw, Lock, ArrowRight, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Users, Archive, RotateCcw, Lock, ArrowRight, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import CreateProjectModal from '../components/CreateProjectModal';
 import ManageMembersModal from '../components/ManageMembersModal';
 
@@ -41,6 +41,24 @@ function Projects({ currentUser, onSelectProject, activeProjectId }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to toggle archive');
+
+      // Refresh list
+      fetchProjects();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteProject = async (projectId) => {
+    if (!window.confirm('Are you absolutely sure you want to permanently delete this project? This will delete all associated tasks, timelines, and comments.')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete project');
 
       // Refresh list
       fetchProjects();
@@ -174,6 +192,16 @@ function Projects({ currentUser, onSelectProject, activeProjectId }) {
                           title={project.isArchived ? 'Restore Project' : 'Archive Project'}
                         >
                           {project.isArchived ? <RotateCcw size={14} /> : <Archive size={14} />}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProject(project._id);
+                          }}
+                          className="btn-card-action text-red"
+                          title="Delete Project"
+                        >
+                          <Trash2 size={14} />
                         </button>
                       </>
                     )}

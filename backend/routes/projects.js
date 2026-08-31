@@ -2,6 +2,7 @@ const express = require('express');
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 const User = require('../models/User');
+const TaskTimeline = require('../models/TaskTimeline');
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -253,6 +254,38 @@ router.delete('/:id/members/:userId', protect, authorize('manager'), async (req,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error removing project member: ' + error.message });
+  }
+});
+
+// @desc    Delete a project and all associated tasks and timelines
+// @route   DELETE /api/projects/:id
+// @access  Private/Manager
+router.delete('/:id', protect, authorize('manager'), async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+
+    // Find all tasks associated with this project
+    const tasks = await Task.find({ projectId: project._id });
+    const taskIds = tasks.map(t => t._id);
+
+    // Clean up all timeline entries for these tasks
+    await TaskTimeline.deleteMany({ taskId: { $in: taskIds } });
+    
+    // Delete all tasks in the project
+    await Task.deleteMany({ projectId: project._id });
+    
+    // Delete the project itself
+    await Project.deleteOne({ _id: project._id });
+
+    res.status(200).json({
+      success: true,
+      message: 'Project and all associated tasks and timelines deleted successfully.',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Error deleting project: ' + error.message });
   }
 });
 
