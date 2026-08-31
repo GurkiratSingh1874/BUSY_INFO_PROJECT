@@ -281,3 +281,75 @@ This document logs the exact prompts used to direct the AI assistant during deve
 ### What you corrected
 * Implemented raw header extraction for Node fetch cookie reading inside our custom test runner.
 * Handled port cleanup: noticed diagnostic scripts grab port 5000 and throw `EADDRINUSE` if the server is started multiple times in the background; resolved by managing active background processes.
+
+---
+
+## 5. Implementing Task Lifecycle State Machine (README Goal 4)
+
+### Prompt
+> Now implement the task lifecycle rules from README goal 4.
+> 
+> The allowed lifecycle is:
+> 
+> Backlog → In Progress → In Review → Done
+> 
+> A task can also become Blocked from:
+> - In Progress
+> - In Review
+> 
+> When unblocked, it returns to the state it was blocked from.
+> 
+> A completed task can be reopened.
+> 
+> A task cannot move to Done if it has an unfinished blocking task.
+> 
+> Illegal transitions must be rejected by the SERVER with a useful explanation.
+> 
+> Examples:
+> 
+> Backlog → Done = reject
+> Backlog → In Review = reject
+> In Progress → Done = reject
+> In Review → Done = allowed only if blocking dependencies are finished
+> In Progress → Blocked = allowed
+> In Review → Blocked = allowed
+> 
+> Do not assume the frontend is trustworthy.
+> 
+> Create one clear backend/service-level function responsible for validating task transitions rather than scattering transition logic across controllers.
+> 
+> The frontend should only display currently legal transitions, but the backend remains the source of truth.
+> 
+> Add tests for:
+> - valid transitions
+> - invalid transitions
+> - blocking/unblocking
+> - reopening Done tasks
+> - dependency preventing Done
+> - dependency completed allowing Done
+> 
+> Keep the implementation simple enough that I can explain it in an interview.
+> 
+> Update docs/decisions.md with the reasoning behind the lifecycle implementation.
+> 
+> Update docs/ai-prompts.md.
+> 
+> Commit this milestone with a meaningful commit message and push it.
+
+### What you got
+* **Centralized Lifecycle Service** (`backend/utils/lifecycle.js`):
+  * `ALLOWED_TRANSITIONS` state table defining `Backlog ➔ In Progress ➔ In Review ➔ Done`.
+  * `validateTransition(currentStatus, targetStatus, preBlockedStatus)` enforcing sequential forward flow, blocking only from `in_progress` or `in_review`, strict restoration to `preBlockedStatus` upon unblocking, reopening of `done` tasks to `backlog`/`in_progress`/`in_review`, and rejecting all illegal skips and backward transitions with human-readable error messages.
+  * `checkBlockerDependencies(taskId)` inspecting blocking tasks and rejecting transition to `done` if any blocker is unfinished (`status !== 'done'`).
+* **API Controller Enforcement** (`backend/routes/tasks.js`):
+  * Integrated validator directly into `PUT /api/tasks/:id`.
+  * Dynamic tracking of `preBlockedStatus` on task documents and audit logging of state changes in `tasktimelines`.
+* **Frontend Workflow UI** (`frontend/src/components/TaskDetailsDrawer.jsx`):
+  * Conditionally renders only valid next actions based on the current state.
+* **Automated Unit & Integration Test Suite** (`backend/tests/lifecycle.test.js`):
+  * 6 comprehensive unit test suites for all transition combinations.
+  * 11 live HTTP API integration tests verifying real database operations, blocker dependency checks, unblocking constraints, and reopening.
+* Updated documentation in `docs/decisions.md` (Decision 6) and `docs/ai-prompts.md`.
+
+### What you corrected
+* Refined `validateTransition` to return distinct, context-specific error messages for every type of illegal transition (e.g. forward skips, backward regressions, unblocking target mismatches, and blocked-from-backlog rejections).

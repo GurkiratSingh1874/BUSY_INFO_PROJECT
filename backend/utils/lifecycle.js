@@ -1,95 +1,139 @@
 const Task = require('../models/Task');
 
 /**
- * Validates a task state transition according to the strict lifecycle rules.
- * Rules:
- * - Backlog -> In Progress (Allowed)
- * - In Progress -> In Review (Allowed)
- * - In Progress -> Blocked (Allowed)
- * - In Review -> Done (Allowed, if blockers are Done)
- * - In Review -> Blocked (Allowed)
- * - Blocked -> Unblocked (returns to In Progress or In Review depending on preBlockedStatus)
- * - Done -> Reopen (Backlog, In Progress, or In Review)
- * - All other transitions are rejected.
+ * Task Lifecycle State Machine Definition (README Goal 4)
  * 
- * @param {string} currentStatus - The current status of the task.
- * @param {string} targetStatus - The status we want to transition to.
- * @param {string} preBlockedStatus - The status before it was blocked (if currentStatus is 'blocked').
- * @returns {object} { isValid: boolean, message: string }
+ * Standard Lifecycle: Backlog -> In Progress -> In Review -> Done
+ * 
+ * State Rules:
+ * 1. Backlog: Can only move forward to In Progress.
+ * 2. In Progress: Can move forward to In Review, or become Blocked.
+ * 3. In Review: Can move forward to Done (if dependencies resolved), or become Blocked.
+ * 4. Blocked: Can only be unblocked back to the state it was blocked from (In Progress or In Review).
+ * 5. Done: Can be reopened back to Backlog, In Progress, or In Review.
+ * 6. Dependencies: A task cannot transition to Done if any of its blocking dependencies are unfinished (!== 'done').
  */
-const validateTransition = (currentStatus, targetStatus, preBlockedStatus) => {
-  if (currentStatus === targetStatus) {
-    return { isValid: true, message: 'Status is already ' + targetStatus };
-  }
 
-  // 1. Reopening Done tasks is allowed to Backlog, In Progress, or In Review
-  if (currentStatus === 'done') {
-    if (['backlog', 'in_progress', 'in_review'].includes(targetStatus)) {
-      return { isValid: true, message: 'Task successfully reopened' };
-    }
-    return {
-      isValid: false,
-      message: 'Reopening a completed task is only allowed to Backlog, In Progress, or In Review.',
-    };
-  }
-
-  // 2. Unblocking tasks
-  if (currentStatus === 'blocked') {
-    if (targetStatus === preBlockedStatus) {
-      return { isValid: true, message: 'Task successfully unblocked' };
-    }
-    return {
-      isValid: false,
-      message: `Unblocking a task must return it to its pre-blocked state: '${preBlockedStatus}'.`,
-    };
-  }
-
-  // 3. From Backlog, you can only move to In Progress
-  if (currentStatus === 'backlog') {
-    if (targetStatus === 'in_progress') {
-      return { isValid: true, message: 'Moved to In Progress' };
-    }
-    return {
-      isValid: false,
-      message: 'From Backlog, you can only transition to In Progress (backward or skipped transitions are rejected).',
-    };
-  }
-
-  // 4. From In Progress, you can move to In Review or Blocked
-  if (currentStatus === 'in_progress') {
-    if (targetStatus === 'in_review') {
-      return { isValid: true, message: 'Moved to In Review' };
-    }
-    if (targetStatus === 'blocked') {
-      return { isValid: true, message: 'Task marked as Blocked' };
-    }
-    return {
-      isValid: false,
-      message: 'From In Progress, you can only transition forward to In Review or mark it as Blocked.',
-    };
-  }
-
-  // 5. From In Review, you can move to Done or Blocked
-  if (currentStatus === 'in_review') {
-    if (targetStatus === 'done') {
-      return { isValid: true, message: 'Moved to Done' };
-    }
-    if (targetStatus === 'blocked') {
-      return { isValid: true, message: 'Task marked as Blocked' };
-    }
-    return {
-      isValid: false,
-      message: 'From In Review, you can only transition forward to Done or mark it as Blocked.',
-    };
-  }
-
-  return { isValid: false, message: `Invalid transition from ${currentStatus} to ${targetStatus}` };
+const ALLOWED_TRANSITIONS = {
+  backlog: ['in_progress'],
+  in_progress: ['in_review', 'blocked'],
+  in_review: ['done', 'blocked'],
+  done: ['backlog', 'in_progress', 'in_review'], // Reopening
 };
 
 /**
- * Checks if a task is blocked by any unfinished tasks in its dependency chain.
- * @param {string} taskId - The ID of the task.
- * @returns {object} { isBlocked: boolean, unfinishedBlockers: Array }
+ * Validates a task state transition according to strict lifecycle rules.
+ * 
+ * @param {string} currentStatus - Current status of the task ('backlog', 'in_progress', 'in_review', 'done', 'blocked').
+ * @param {string} targetStatus - Target status requested for transition.
+ * @param {string|null} preBlockedStatus - The status before the task became blocked (if currentStatus === 'blocked').
+ * @returns {{ isValid: boolean, message: string }}
+ */
+const validateTransition = (currentStatus, targetStatus, preBlockedStatus = null) => {
+  // If target is the same as current, it's a no-op / valid
+  if (currentStatus === targetStatus) {
+    return { isValid: true, message: `Status is already '${targetStatus}'.` };
+  }
+
+  // 1. Handling transition FROM 'blocked' (Unblocking)
+  if (currentStatus === 'blocked') {
+    if (!preBlockedStatus || !['in_progress', 'in_review'].includes(preBlockedStatus)) {
+      return {
+        isValid: false,
+        message: 'Invalid task state: Task was blocked without a valid prior status to return to.',
+      };
+    }
+
+    if (targetStatus === preBlockedStatus) {
+      return {
+        isValid: true,
+        message: `Task successfully unblocked and returned to '${preBlockedStatus}'.`,
+      };
+    }
+
+    return {
+      isValid: false,
+      message: `Illegal transition: Blocked tasks must return to the state they were blocked from ('${preBlockedStatus}'), not '${targetStatus}'.`,
+    };
+  }
+
+  // 2. Check transition against the allowed state machine map
+  const allowed = ALLOWED_TRANSITIONS[currentStatus] || [];
+  if (allowed.includes(targetStatus)) {
+    return {
+      isValid: true,
+      message: `Valid transition from '${currentStatus}' to '${targetStatus}'.`,
+    };
+  }
+
+  // 3. Detailed explanatory messages for illegal transition attempts
+  if (currentStatus === 'backlog' && targetStatus === 'done') {
+    return {
+      isValid: false,
+      message: 'Illegal transition: Tasks in Backlog cannot jump directly to Done. Follow the sequence: Backlog -> In Progress -> In Review -> Done.',
+    };
+  }
+
+  if (currentStatus === 'backlog' && targetStatus === 'in_review') {
+    return {
+      isValid: false,
+      message: 'Illegal transition: Tasks in Backlog cannot skip In Progress to reach In Review.',
+    };
+  }
+
+  if (currentStatus === 'backlog' && targetStatus === 'blocked') {
+    return {
+      isValid: false,
+      message: 'Illegal transition: Backlog tasks cannot be Blocked. Tasks must be In Progress or In Review to become Blocked.',
+    };
+  }
+
+  if (currentStatus === 'in_progress' && targetStatus === 'done') {
+    return {
+      isValid: false,
+      message: 'Illegal transition: Tasks In Progress cannot jump directly to Done without passing In Review.',
+    };
+  }
+
+  if (currentStatus === 'in_progress' && targetStatus === 'backlog') {
+    return {
+      isValid: false,
+      message: 'Illegal transition: Backward transitions from In Progress to Backlog are not permitted.',
+    };
+  }
+
+  if (currentStatus === 'in_review' && targetStatus === 'in_progress') {
+    return {
+      isValid: false,
+      message: 'Illegal transition: Backward transitions from In Review to In Progress are not permitted.',
+    };
+  }
+
+  if (currentStatus === 'in_review' && targetStatus === 'backlog') {
+    return {
+      isValid: false,
+      message: 'Illegal transition: Backward transitions from In Review to Backlog are not permitted.',
+    };
+  }
+
+  if (currentStatus === 'done' && targetStatus === 'blocked') {
+    return {
+      isValid: false,
+      message: 'Illegal transition: Completed tasks cannot be directly marked as Blocked. Reopen the task first.',
+    };
+  }
+
+  return {
+    isValid: false,
+    message: `Illegal transition: Cannot transition task from '${currentStatus}' to '${targetStatus}'.`,
+  };
+};
+
+/**
+ * Checks if a task is blocked by any unfinished tasks in its dependency list.
+ * 
+ * @param {string} taskId - The ID of the task being checked.
+ * @returns {Promise<{ isBlocked: boolean, unfinishedBlockers: Array<{ id: string, title: string, status: string }>, error?: string }>}
  */
 const checkBlockerDependencies = async (taskId) => {
   try {
@@ -98,13 +142,21 @@ const checkBlockerDependencies = async (taskId) => {
       return { isBlocked: false, error: 'Task not found' };
     }
 
-    // Find any blocker that is not 'done'
+    if (!task.blockers || task.blockers.length === 0) {
+      return { isBlocked: false, unfinishedBlockers: [] };
+    }
+
+    // Filter for any blocker whose status is not 'done'
     const unfinished = task.blockers.filter(blocker => blocker.status !== 'done');
 
     if (unfinished.length > 0) {
       return {
         isBlocked: true,
-        unfinishedBlockers: unfinished.map(t => ({ id: t._id, title: t.title, status: t.status })),
+        unfinishedBlockers: unfinished.map(t => ({
+          id: t._id.toString(),
+          title: t.title,
+          status: t.status,
+        })),
       };
     }
 
@@ -117,4 +169,5 @@ const checkBlockerDependencies = async (taskId) => {
 module.exports = {
   validateTransition,
   checkBlockerDependencies,
+  ALLOWED_TRANSITIONS,
 };

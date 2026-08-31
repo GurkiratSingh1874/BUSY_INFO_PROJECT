@@ -42,3 +42,14 @@ Log of major technical and architectural decisions made during development.
 * **Chose**: Custom utility styling classes and CSS custom properties (variables) defined in a clean `index.css` file.
 * **Rejected**: Tailwind CSS framework.
 * **Why**: Introducing Tailwind adds compilation dependencies, configuration files (`tailwind.config.js`), and bloated HTML utility strings that are harder to audit in a simple workspace review. Vanilla CSS is lightweight, has zero compilation overhead, and allows us to build a custom responsive layout with high-quality aesthetics.
+
+---
+
+## Decision 6: Centralized State Machine for Task Lifecycle and Blocker Dependency Validation
+
+* **Chose**: Enforcing task lifecycle transitions and blocker dependencies through a centralized backend service (`backend/utils/lifecycle.js`).
+* **Rejected**: Scattering transition logic across route handlers or relying exclusively on frontend UI buttons to restrict transitions.
+* **Why**:
+  1. **Security & Data Integrity**: Client interfaces are fundamentally untrusted; users or malicious actors can issue direct `PUT /api/tasks/:id` HTTP calls attempting to bypass the sequential workflow (e.g., jumping directly from Backlog to Done).
+  2. **Single Source of Truth**: Isolating the transition map (`ALLOWED_TRANSITIONS`), unblocking restoration logic (`preBlockedStatus`), and dependency resolution checks into a standalone service makes the lifecycle rules easy to test in isolation (via both unit tests and integration tests) and straightforward to explain in an interview.
+  3. **Explicit Error Feedback**: Rather than returning a generic 400 Bad Request error, the validator returns human-readable explanations detailing why a specific transition was rejected (e.g., distinguishing between skipped transitions, illegal backward steps, invalid unblocking targets, and unfinished blocking dependencies with exact blocker titles).
