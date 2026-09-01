@@ -418,3 +418,78 @@ This document logs the exact prompts used to direct the AI assistant during deve
 
 ### What you corrected
 * Used escaped regex patterns to prevent regex injection crashes on text searches containing special symbols.
+
+---
+
+## 7. Implementing Bulk Operations & Filtered CSV Export (README Goal 7)
+
+### Prompt
+> Implement README goal 7.
+> 
+> Users should be able to select multiple tasks from the task list and perform ONE bulk action:
+> 
+> 1. status change
+> 2. assignee change
+> 3. due-date change
+> 
+> The backend must process each selected task independently.
+> 
+> The response must report per task:
+> 
+> SUCCESS
+> or
+> REJECTED + reason
+> 
+> Do NOT make the entire batch fail because one task is invalid.
+> 
+> For example:
+> 
+> Task A → SUCCESS
+> Task B → SUCCESS
+> Task C → REJECTED: dependency is unfinished
+> Task D → SUCCESS
+> 
+> All normal business rules and permissions must still apply to each task.
+> 
+> Also implement CSV export of the CURRENTLY FILTERED task list.
+> 
+> Do not export unrelated tasks.
+> 
+> Keep the implementation simple and readable.
+> 
+> Add tests for:
+> - mixed successful/failed bulk operations
+> - invalid status transitions
+> - invalid assignee
+> - permission failures
+> - filtered CSV export
+> 
+> Update documentation and ai-prompts.md.
+> 
+> Commit and push.
+
+### What you got
+* **Bulk Operations API** (`POST /api/tasks/bulk`):
+  * Processes `status`, `assignees`, and `dueDate` updates across an array of task IDs.
+  * Processes tasks independently: does not abort the entire batch when an individual task transition is invalid or blocked.
+  * Evaluates sequential state machine rules (`validateTransition`) and blocker dependency checks (`checkBlockerDependencies`), returning human-readable rejection reasons with blocker task names.
+  * Enforces project boundary checks (only members of a task's project can edit the task or be assigned to it).
+  * Automatically creates immutable audit log entries in `TaskTimeline` for every successful field change or assignment/unassignment.
+  * Returns an itemized report containing total, succeeded, and failed counts along with per-task status (`SUCCESS` or `REJECTED + reason`).
+* **Filtered CSV Export API** (`GET /api/tasks/export/csv`):
+  * Reuses server-side search and multi-criteria filter query parameters (`search`, `projectId`, `status`, `priority`, `assigneeId`, `overdue`, `sortBy`, `order`).
+  * Scoped to user access permissions (rejects unauthorized project queries with `403 Forbidden`).
+  * Streams correctly formatted and quote-escaped CSV files containing only currently matching tasks.
+* **Frontend Multi-Select & Bulk UI** (`frontend/src/pages/TaskList.jsx`):
+  * Row checkboxes and header select-all control.
+  * Bulk action toolbar displaying selected count, action selector (Status, Assignees, Due Date), dynamic input controls, and apply/deselect buttons.
+  * "Export CSV" button triggering instant download of the filtered dataset.
+  * Detailed Bulk Operation Report modal summarizing successes and listing itemized rejection reasons.
+* **Automated Integration Test Suite** (`backend/tests/bulk.test.js`):
+  * 7 automated tests covering mixed partial-success batches, invalid transitions, unfinished blocker rejections, non-member assignee rejections, permission boundaries, and scoped CSV streaming.
+* Updated `docs/decisions.md` (Decision 8) and `docs/ai-prompts.md`.
+
+### What you corrected
+* Fixed `checkBlockerDependencies` property inspection in the bulk controller: updated check to inspect `blockerCheck.isBlocked` and format blocker titles instead of looking for an absent `canComplete` flag.
+* Refactored timeline logging in `/bulk` to use `logTimelineEvent` with the required `userId` field to satisfy Mongoose schema constraints.
+

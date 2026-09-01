@@ -162,6 +162,404 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// @desc    Export currently filtered tasks as a CSV file (README Goal 7)
+// @route   GET /api/tasks/export/csv
+// @access  Private (Scoped by project access permissions)
+router.get('/export/csv', protect, async (req, res) => {
+  try {
+    const {
+      search,
+      projectId,
+      status,
+      assigneeId,
+      priority,
+      overdue,
+      myTasks,
+      includeArchived,
+      sortBy = 'updatedAt',
+      order = 'desc',
+    } = req.query;
+
+    // 1. Determine Allowed Projects based on user role & membership
+    let projectScopeQuery = {};
+    if (req.user.role !== 'manager') {
+      projectScopeQuery.members = req.user._id;
+    }
+    if (includeArchived !== 'true') {
+      projectScopeQuery.isArchived = { $ne: true };
+    }
+
+    const allowedProjects = await Project.find(projectScopeQuery).select('_id');
+    const allowedProjectIds = allowedProjects.map(p => p._id);
+
+    let query = {};
+
+    // 2. Project Filter
+    if (projectId) {
+      const isAllowed = allowedProjectIds.some(id => id.toString() === projectId);
+      if (!isAllowed) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: You do not have permission to export tasks for this project.',
+        });
+      }
+      query.projectId = projectId;
+    } else {
+      query.projectId = { $in: allowedProjectIds };
+    }
+
+    // 3. Text Search over Title and Description
+    if (search && search.trim()) {
+      const trimmed = search.trim();
+      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
+      query.$or = [
+        { title: { $regex: regex } },
+        { description: { $regex: regex } },
+      ];
+    }
+
+    // 4. Status Filter
+    if (status) query.status = status;
+
+    // 5. Assignee Filter
+    if (assigneeId) query.assignees = assigneeId;
+
+    // 6. "My Tasks" Filter Shortcut
+    if (myTasks === 'true') {
+      query.assignees = req.user._id;
+      if (!status) query.status = { $ne: 'done' };
+    }
+
+    // 7. Priority Filter
+    if (priority) query.priority = priority;
+
+    // 8. Overdue Filter
+    if (overdue === 'true') {
+      query.dueDate = { $lt: new Date(), $ne: null };
+      if (!status) query.status = { $ne: 'done' };
+    }
+
+    // 9. Sorting
+    let sortObj = {};
+    const sortDirection = order === 'asc' ? 1 : -1;
+
+    if (sortBy === 'dueDate') {
+      sortObj = { dueDate: sortDirection, createdAt: -1 };
+    } else if (sortBy === 'priority') {
+      sortObj = { priority: sortDirection, updatedAt: -1 };
+    } else if (sortBy === 'createdAt') {
+      sortObj = { createdAt: sortDirection };
+    } else {
+      sortObj = { updatedAt: sortDirection };
+    }
+
+    // Query tasks for export without pagination limits
+    const tasks = await Task.find(query)
+      .populate('projectId', 'key name')
+      .populate('assignees', 'name email')
+      .sort(sortObj);
+
+    // Helper to safely format CSV values (escape quotes and handle newlines/commas)
+    const escapeCsv = (str) => {
+      if (str === null || str === undefined) return '""';
+      const val = String(str).replace(/"/g, '""');
+      return `"${val}"`;
+    };
+
+    const headers = [
+      'Task ID',
+      'Project Key',
+      'Project Name',
+      'Title',
+      'Description',
+      'Status',
+      'Priority',
+      'Due Date',
+      'Assignees',
+      'Created At',
+      'Updated At',
+    ];
+
+    const rows = tasks.map(t => [
+      escapeCsv(t._id.toString()),
+      escapeCsv(t.projectId ? t.projectId.key : ''),
+      escapeCsv(t.projectId ? t.projectId.name : ''),
+      escapeCsv(t.title),
+      escapeCsv(t.description || ''),
+      escapeCsv(t.status),
+      escapeCsv(t.priority),
+      escapeCsv(t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0] : ''),
+      escapeCsv((t.assignees || []).map(a => a.name).join('; ')),
+      escapeCsv(new Date(t.createdAt).toISOString()),
+      escapeCsv(new Date(t.updatedAt).toISOString()),
+    ].join(','));
+
+    const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="tasks-export-${Date.now()}.csv"`);
+    return res.status(200).send(csvContent);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error exporting tasks to CSV: ' + error.message,
+    });
+  }
+});
+
+// @desc    Perform bulk operation on multiple tasks independently (README Goal 7)
+// @route   POST /api/tasks/bulk
+// @access  Private (Scoped per task)
+router.post('/bulk', protect, async (req, res) => {
+  const { taskIds, action, payload } = req.body;
+
+  if (!Array.isArray(taskIds) || taskIds.length === 0) {
+    return res.status(400).json({ success: false, error: 'taskIds must be a non-empty array' });
+  }
+
+  if (!['status', 'assignees', 'dueDate'].includes(action)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid action. Allowed actions are: status, assignees, dueDate',
+    });
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    return res.status(400).json({ success: false, error: 'payload object is required' });
+  }
+
+  const results = [];
+  let succeededCount = 0;
+  let failedCount = 0;
+
+  for (const id of taskIds) {
+    try {
+      const task = await Task.findById(id).populate('projectId', 'key name members isArchived');
+      if (!task) {
+        results.push({
+          taskId: id,
+          title: 'Unknown Task',
+          status: 'REJECTED',
+          reason: 'Task not found',
+        });
+        failedCount++;
+        continue;
+      }
+
+      // Check permission: if user is not manager, verify membership in task's project
+      if (req.user.role !== 'manager') {
+        const isMember = task.projectId && task.projectId.members.some(m => m.toString() === req.user._id.toString());
+        if (!isMember) {
+          results.push({
+            taskId: id,
+            title: task.title,
+            status: 'REJECTED',
+            reason: `Access denied: You are not a member of project '${task.projectId ? task.projectId.name : 'Unknown'}'`,
+          });
+          failedCount++;
+          continue;
+        }
+      }
+
+      // 1. Bulk Status Change
+      if (action === 'status') {
+        const newStatus = payload.status;
+        if (!newStatus) {
+          results.push({
+            taskId: id,
+            title: task.title,
+            status: 'REJECTED',
+            reason: 'Target status is required',
+          });
+          failedCount++;
+          continue;
+        }
+
+        const transitionValidation = validateTransition(task.status, newStatus, task.preBlockedStatus);
+        if (!transitionValidation.isValid) {
+          results.push({
+            taskId: id,
+            title: task.title,
+            status: 'REJECTED',
+            reason: transitionValidation.message,
+          });
+          failedCount++;
+          continue;
+        }
+
+        // Blocker dependency check if moving to 'done'
+        if (newStatus === 'done') {
+          const blockerCheck = await checkBlockerDependencies(task._id);
+          if (blockerCheck.isBlocked) {
+            const names = blockerCheck.unfinishedBlockers.map(t => `'${t.title}' (${t.status})`).join(', ');
+            results.push({
+              taskId: id,
+              title: task.title,
+              status: 'REJECTED',
+              reason: `Cannot complete task: It is blocked by unfinished tasks: ${names}`,
+            });
+            failedCount++;
+            continue;
+          }
+        }
+
+        const oldStatus = task.status;
+        if (newStatus === 'blocked') {
+          task.preBlockedStatus = oldStatus;
+        } else if (oldStatus === 'blocked') {
+          task.preBlockedStatus = null;
+        }
+        task.status = newStatus;
+        await task.save();
+
+        // Audit timeline
+        if (oldStatus !== newStatus) {
+          await logTimelineEvent({
+            taskId: task._id,
+            userId: req.user._id,
+            type: 'field_change',
+            fieldName: 'status',
+            oldValue: oldStatus,
+            newValue: newStatus,
+          });
+        }
+
+        results.push({
+          taskId: id,
+          title: task.title,
+          status: 'SUCCESS',
+        });
+        succeededCount++;
+        continue;
+      }
+
+      // 2. Bulk Assignees Change
+      if (action === 'assignees') {
+        const newAssignees = payload.assignees;
+        if (!Array.isArray(newAssignees)) {
+          results.push({
+            taskId: id,
+            title: task.title,
+            status: 'REJECTED',
+            reason: 'assignees must be an array of user IDs',
+          });
+          failedCount++;
+          continue;
+        }
+
+        // Verify that all assignees belong to the task's project
+        const project = await Project.findById(task.projectId._id || task.projectId);
+        const validMemberIds = project.members.map(m => m.toString());
+        const invalidAssignees = newAssignees.filter(userId => !validMemberIds.includes(userId.toString()));
+
+        if (invalidAssignees.length > 0) {
+          results.push({
+            taskId: id,
+            title: task.title,
+            status: 'REJECTED',
+            reason: `Assignment failed: All task assignees must be registered members of project '${project.name}'.`,
+          });
+          failedCount++;
+          continue;
+        }
+
+        const oldAssignees = (task.assignees || []).map(a => a.toString());
+        const targetAssignees = newAssignees.map(a => a.toString());
+        const { added, removed } = getArrayDiff(oldAssignees, targetAssignees);
+
+        task.assignees = targetAssignees;
+        await task.save();
+
+        // Audit timeline for additions & removals
+        for (const addedId of added) {
+          await logTimelineEvent({
+            taskId: task._id,
+            userId: req.user._id,
+            type: 'assign',
+            newValue: addedId,
+          });
+        }
+        for (const removedId of removed) {
+          await logTimelineEvent({
+            taskId: task._id,
+            userId: req.user._id,
+            type: 'unassign',
+            oldValue: removedId,
+          });
+        }
+
+        results.push({
+          taskId: id,
+          title: task.title,
+          status: 'SUCCESS',
+        });
+        succeededCount++;
+        continue;
+      }
+
+      // 3. Bulk Due Date Change
+      if (action === 'dueDate') {
+        const newDueDate = payload.dueDate ? new Date(payload.dueDate) : null;
+        if (payload.dueDate && isNaN(newDueDate.getTime())) {
+          results.push({
+            taskId: id,
+            title: task.title,
+            status: 'REJECTED',
+            reason: 'Invalid date format provided for dueDate',
+          });
+          failedCount++;
+          continue;
+        }
+
+        const oldDueDateStr = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : 'None';
+        const newDueDateStr = newDueDate ? newDueDate.toISOString().split('T')[0] : 'None';
+
+        task.dueDate = newDueDate;
+        await task.save();
+
+        if (oldDueDateStr !== newDueDateStr) {
+          await logTimelineEvent({
+            taskId: task._id,
+            userId: req.user._id,
+            type: 'field_change',
+            fieldName: 'dueDate',
+            oldValue: oldDueDateStr,
+            newValue: newDueDateStr,
+          });
+        }
+
+        results.push({
+          taskId: id,
+          title: task.title,
+          status: 'SUCCESS',
+        });
+        succeededCount++;
+        continue;
+      }
+
+    } catch (err) {
+      results.push({
+        taskId: id,
+        title: 'Error Processing',
+        status: 'REJECTED',
+        reason: 'Internal error: ' + err.message,
+      });
+      failedCount++;
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    summary: {
+      total: taskIds.length,
+      succeeded: succeededCount,
+      failed: failedCount,
+    },
+    results,
+  });
+});
+
 // @desc    Get tasks under a specific project
 // @route   GET /api/projects/:projectId/tasks
 // @access  Private (scoping verified by verifyProjectAccess)

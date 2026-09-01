@@ -2161,4 +2161,198 @@ body {
 .mt-12 { margin-top: 12px; }
 .mt-20 { margin-top: 20px; }
 
+/* ==========================================================================
+   Bulk Actions Toolbar & Multi-Select (README Goal 7)
+   ========================================================================== */
+.bulk-actions-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: 12px;
+}
+
+.bulk-toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.bulk-toolbar-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bulk-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: hsl(var(--text-muted));
+  text-transform: uppercase;
+}
+
+.bulk-select,
+.bulk-date-input {
+  background-color: rgba(15, 23, 42, 0.8);
+  border: 1px solid hsl(var(--border-color));
+  color: hsl(var(--text-primary));
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+.bulk-select:focus,
+.bulk-date-input:focus {
+  outline: none;
+  border-color: hsl(var(--cyan));
+}
+
+.cell-checkbox {
+  width: 44px;
+  text-align: center;
+}
+
+.cell-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: hsl(var(--cyan));
+}
+
+.row-selected {
+  background: rgba(14, 165, 233, 0.08) !important;
+}
+
+/* ==========================================================================
+   Bulk Operation Report Modal
+   ========================================================================== */
+.bulk-results-modal {
+  max-width: 640px;
+}
+
+.bulk-report-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0 20px 0;
+}
+
+.bulk-summary-stat {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.bulk-summary-stat .stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: hsl(var(--text-muted));
+}
+
+.bulk-summary-stat .stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stat-success .stat-value {
+  color: #34d399;
+}
+
+.stat-failed .stat-value {
+  color: #f87171;
+}
+
+.bulk-results-list {
+  max-height: 340px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bulk-result-item {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.item-success {
+  border-left: 4px solid #10b981;
+}
+
+.item-failed {
+  border-left: 4px solid #ef4444;
+}
+
+.bulk-item-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+}
+
+.bulk-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bulk-item-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.bulk-item-reason {
+  font-size: 0.78rem;
+  color: #fca5a5;
+  line-height: 1.35;
+}
+
+.bulk-item-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+
 

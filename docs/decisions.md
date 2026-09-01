@@ -64,3 +64,15 @@ Log of major technical and architectural decisions made during development.
   1. **Scalability & Performance**: Client-side filtering fails as datasets grow beyond a few hundred records, causing high memory usage, sluggish UI re-renders, and excessive network bandwidth consumption.
   2. **Security & Data Scoping**: Client-side filtering requires sending all tasks over the wire, which risks leaking confidential tasks from unauthorized projects. Performing filtering and scoping on the server ensures members only receive tasks they have explicit permission to view.
   3. **Accurate Pagination**: By combining `Task.countDocuments(query)` with `.skip().limit()`, the client receives accurate match totals and page counts without over-fetching.
+
+---
+
+## Decision 8: Independent Per-Task Processing in Bulk Operations
+
+* **Chose**: Processing bulk actions per-task independently with an itemized result report (`SUCCESS` or `REJECTED + reason`).
+* **Rejected**: Atomic all-or-nothing transactions that fail the whole batch if a single task is invalid.
+* **Why**:
+  1. **User Experience & Productivity**: In practical project management, users frequently apply a bulk action (such as marking multiple tickets Done or assigning a teammate) across a mixed batch. If one task has an unresolved blocker or cannot move backwards, failing the entire batch frustrates users and leaves them guessing which task caused the failure.
+  2. **Transparent Feedback**: An itemized report clearly communicates what succeeded and why specific items were rejected, allowing users to address the blocker dependencies without re-doing the rest of their work.
+  3. **Strict Policy Compliance**: Each individual task is subjected to the full suite of state machine validation, blocker checks, assignee project membership rules, and immutable timeline logging, preventing any bulk backdoor around business logic.
+
