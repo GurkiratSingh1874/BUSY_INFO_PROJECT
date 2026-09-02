@@ -552,4 +552,81 @@ This document logs the exact prompts used to direct the AI assistant during deve
 * Implemented Monday-to-Sunday rolling week bucketing to cleanly calculate "Due This Week", "Completed This Week", and the 8-week completion bar chart.
 * Used audit timeline timestamps (`TaskTimeline`) to isolate true task completion dates from subsequent metadata edits.
 
+---
+
+## 9. Immutable Timeline & Audit History (README Goal 9)
+
+### Prompt
+> Now implement README goal 9.
+> 
+> Every task needs an immutable timeline.
+> 
+> Record:
+> - task creation
+> - every relevant field change
+> - old value
+> - new value
+> - who made the change
+> - assignment
+> - unassignment
+> - comments
+> 
+> Comments are part of the timeline.
+> 
+> The history must NOT be editable or deletable after creation.
+> 
+> This includes managers.
+> 
+> IMPORTANT:
+> Do not simply make an "edit history" button unavailable.
+> 
+> The backend/database design must prevent normal application operations from modifying or deleting historical records.
+> 
+> Keep the implementation simple.
+> 
+> When a task changes, create the appropriate history entry as part of the same operation where practical.
+> 
+> Test:
+> - task creation history
+> - status change
+> - priority change
+> - due-date change
+> - assignment/unassignment
+> - comments
+> - attempted history modification
+> 
+> Update docs/schema.md and docs/decisions.md to explain why history is modeled this way.
+> 
+> Update ai-prompts.md.
+> 
+> Commit and push.
+
+### What you got
+* **Unified Append-Only Schema** (`backend/models/TaskTimeline.js`):
+  * Typed audit events: `create`, `field_change` (with `fieldName`, `oldValue`, `newValue`), `assign`, `unassign`, and `comment` (with `commentText`).
+  * Actor tracking on every event (`userId` populated with user name, email, and role).
+  * Strict database-level immutability enforced by Mongoose middleware:
+    * `pre('save')`: Throws error on any modification to existing timeline documents.
+    * `pre('updateOne')`, `pre('updateMany')`, `pre('findOneAndUpdate')`, `pre('replaceOne')`: Throws `Error('Timeline events are immutable and cannot be updated.')`.
+    * `pre('deleteOne')`, `pre('deleteMany')`, `pre('findOneAndDelete')`, `pre('remove')`: Throws `Error('Timeline events are immutable and cannot be deleted.')`.
+* **API Layer Route Protection** (`backend/routes/tasks.js`):
+  * Added explicit HTTP handlers rejecting `PUT` and `DELETE` requests on `/api/tasks/:id/timeline/:timelineId` and `/api/tasks/:id/comments/:commentId` with `403 Forbidden` for all users, including managers.
+  * Preserved timeline audit records indefinitely upon task deletion (removed cascade deletion of historical records).
+* **Automatic Timeline Event Capture**:
+  * Task creation (`POST /api/tasks/project/:projectId`).
+  * Status changes, priority changes, due-date changes, title/description edits (`PUT /api/tasks/:id` and `POST /api/tasks/bulk`).
+  * Assignment and unassignment during updates and project member removal cascade (`DELETE /api/projects/:id/members/:userId`).
+  * Immutable comment creation (`POST /api/tasks/:id/comments`).
+* **Frontend Unified Timeline View** (`frontend/src/components/TaskDetailsDrawer.jsx`):
+  * Chronological feed displaying actor name, exact timestamp, human-readable status/priority/date diffs, assignment changes, and immutable comment bubbles.
+* **Automated Test Suite** (`backend/tests/timeline.test.js`):
+  * 10 thorough test cases validating task creation history, status transition audit, priority changes, due dates, assignments, unassignments, comments, HTTP 403 route rejections, and Mongoose schema mutation rejection hooks.
+* Updated `docs/schema.md`, `docs/decisions.md` (Decision 10), and `backend/package.json`.
+
+### What you corrected
+* Fixed unassignment event logging in `backend/routes/tasks.js`: updated payload to store `oldValue: userId` (representing the removed user) instead of `newValue: userId`.
+* Added audit logging for cascade unassignments when a member is removed from a project in `backend/routes/projects.js`.
+* Enhanced `TaskDetailsDrawer.jsx` to render both `oldValue` and `newValue` for unassignment events.
+
+
 

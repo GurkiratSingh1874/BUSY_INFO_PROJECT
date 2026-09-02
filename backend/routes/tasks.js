@@ -771,7 +771,7 @@ router.put('/:id', protect, async (req, res) => {
           taskId: task._id,
           userId: req.user._id,
           type: 'unassign',
-          newValue: userId,
+          oldValue: userId,
         });
       }
     }
@@ -842,8 +842,7 @@ router.delete('/:id', protect, authorize('manager'), async (req, res) => {
       return res.status(404).json({ success: false, error: 'Task not found' });
     }
 
-    // Clean up timeline entries and dismissals associated with this task
-    await TaskTimeline.deleteMany({ taskId: task._id });
+    // Permanently preserve TaskTimeline entries as an immutable audit trail
     await Task.deleteOne({ _id: task._id });
 
     res.status(200).json({ success: true, message: 'Task deleted successfully.' });
@@ -892,6 +891,46 @@ router.post('/:id/comments', protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error adding comment: ' + error.message });
   }
+});
+
+// @desc    Attempt to edit a timeline entry (strictly rejected)
+// @route   PUT /api/tasks/:taskId/timeline/:timelineId
+// @access  Private
+router.put('/:taskId/timeline/:timelineId', protect, (req, res) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Forbidden: Timeline events are strictly immutable and cannot be updated.',
+  });
+});
+
+// @desc    Attempt to delete a timeline entry (strictly rejected)
+// @route   DELETE /api/tasks/:taskId/timeline/:timelineId
+// @access  Private
+router.delete('/:taskId/timeline/:timelineId', protect, (req, res) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Forbidden: Timeline events are strictly immutable and cannot be deleted.',
+  });
+});
+
+// @desc    Attempt to edit a comment (strictly rejected - comments are immutable timeline entries)
+// @route   PUT /api/tasks/:taskId/comments/:commentId
+// @access  Private
+router.put('/:taskId/comments/:commentId', protect, (req, res) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Forbidden: Comments are immutable timeline events and cannot be edited.',
+  });
+});
+
+// @desc    Attempt to delete a comment (strictly rejected - comments are immutable timeline entries)
+// @route   DELETE /api/tasks/:taskId/comments/:commentId
+// @access  Private
+router.delete('/:taskId/comments/:commentId', protect, (req, res) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Forbidden: Comments are immutable timeline events and cannot be deleted.',
+  });
 });
 
 module.exports = router;

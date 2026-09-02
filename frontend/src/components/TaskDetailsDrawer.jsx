@@ -523,7 +523,7 @@ function TaskDetailsDrawer({ isOpen, taskId, onClose, projectMembers, currentUse
 
                             {event.type === 'unassign' && (
                               <p className="event-description">
-                                Unassigned <strong>{renderValueName('assignees', event.newValue)}</strong>.
+                                Unassigned <strong>{renderValueName('assignees', event.oldValue || event.newValue)}</strong>.
                               </p>
                             )}
 

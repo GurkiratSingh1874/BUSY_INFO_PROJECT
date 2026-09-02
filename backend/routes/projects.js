@@ -3,6 +3,7 @@ const Project = require('../models/Project');
 const Task = require('../models/Task');
 const User = require('../models/User');
 const TaskTimeline = require('../models/TaskTimeline');
+const { logTimelineEvent } = require('../utils/timeline');
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -236,10 +237,21 @@ router.delete('/:id/members/:userId', protect, authorize('manager'), async (req,
     await project.save();
 
     // CRITICAL REQUIREMENT: Automatically unassign user from all tasks under this project
+    const tasksWithUser = await Task.find({ projectId: projectId, assignees: userId }).select('_id');
     await Task.updateMany(
       { projectId: projectId },
       { $pull: { assignees: userId } }
     );
+
+    // Audit cascade unassignment in task timeline
+    for (const t of tasksWithUser) {
+      await logTimelineEvent({
+        taskId: t._id,
+        userId: req.user._id,
+        type: 'unassign',
+        oldValue: userId,
+      });
+    }
 
     // Get updated populated project
     const populated = await project.populate([

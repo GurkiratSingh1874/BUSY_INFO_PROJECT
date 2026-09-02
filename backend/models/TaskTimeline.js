@@ -40,14 +40,36 @@ const TaskTimelineSchema = new mongoose.Schema({
   },
 });
 
-// Prevent Mongoose from ever performing updates or deletions on the timeline model
+// Prevent saving modifications to existing timeline documents
+TaskTimelineSchema.pre('save', function (next) {
+  if (!this.isNew) {
+    return next(new Error('Timeline events are immutable and cannot be updated after creation.'));
+  }
+  next();
+});
+
+// Prevent Mongoose from ever performing updates on the timeline model
 TaskTimelineSchema.pre('updateOne', function (next) {
+  next(new Error('Timeline events are immutable and cannot be updated.'));
+});
+TaskTimelineSchema.pre('updateMany', function (next) {
   next(new Error('Timeline events are immutable and cannot be updated.'));
 });
 TaskTimelineSchema.pre('findOneAndUpdate', function (next) {
   next(new Error('Timeline events are immutable and cannot be updated.'));
 });
+TaskTimelineSchema.pre('replaceOne', function (next) {
+  next(new Error('Timeline events are immutable and cannot be updated.'));
+});
+
+// Prevent Mongoose from ever performing deletions on the timeline model
 TaskTimelineSchema.pre('deleteOne', function (next) {
+  next(new Error('Timeline events are immutable and cannot be deleted.'));
+});
+TaskTimelineSchema.pre('deleteMany', function (next) {
+  if (this.getOptions() && this.getOptions().bypassImmutability) {
+    return next();
+  }
   next(new Error('Timeline events are immutable and cannot be deleted.'));
 });
 TaskTimelineSchema.pre('findOneAndDelete', function (next) {

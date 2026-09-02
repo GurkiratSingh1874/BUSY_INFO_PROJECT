@@ -41,11 +41,21 @@
 * `taskId`: `ObjectId` (Required, ref: `tasks`, Indexed) - The task this history entry belongs to.
 * `type`: `String` (Required, enum: `['create', 'field_change', 'assign', 'unassign', 'comment']`) - Event type.
 * `userId`: `ObjectId` (Required, ref: `users`) - The user who performed the operation.
-* `fieldName`: `String` (Optional, default: `null`) - Field modified (e.g. 'status', 'dueDate').
+* `fieldName`: `String` (Optional, default: `null`) - Field modified (e.g. 'status', 'priority', 'dueDate', 'title', 'description').
 * `oldValue`: `Mixed` (Optional, default: `null`) - The value prior to modification.
 * `newValue`: `Mixed` (Optional, default: `null`) - The value after modification.
-* `commentText`: `String` (Optional, default: `null`) - The text of the user comment (used if type is `'comment'`).
-* `createdAt`: `Date` (Default: `Date.now`, Immutable) - Set on save.
+* `commentText`: `String` (Optional, default: `null`) - The text of the user comment (used when type is `'comment'`).
+* `createdAt`: `Date` (Default: `Date.now`, Immutable) - Timestamp when the event was recorded.
+
+#### Why History is Modeled This Way:
+1. **Unified Event Sourcing / Append-Only Log Pattern**: Rather than creating separate tables for `comments`, `status_history`, and `assignment_logs`, all historical occurrences are modeled as an immutable stream of typed events. This eliminates expensive relational joins and provides a natural chronological activity feed (`.find({ taskId }).sort({ createdAt: 1 })`).
+2. **First-Class Comments**: Treating comments as a specialized timeline event (`type: 'comment'`) guarantees that comments cannot be retroactively tampered with, deleted, or backdated. Discussion context remains permanently anchored alongside the state changes that occurred before and after it.
+3. **Multi-Layer Immutability (Not Just UI Hiding)**:
+   * **Database/Mongoose Layer**: `TaskTimelineSchema` defines strict pre-middleware preventing any mutation (`pre('save')` on existing docs, `pre('updateOne')`, `pre('updateMany')`, `pre('replaceOne')`, `pre('findOneAndUpdate')`, `pre('deleteOne')`, `pre('deleteMany')`, `pre('findOneAndDelete')`, and `pre('remove')`). Any attempt to alter or delete an existing history document throws an error.
+   * **API Layer**: Explicit `PUT` and `DELETE` handlers on `/api/tasks/:id/timeline/:timelineId` and `/api/tasks/:id/comments/:commentId` return `403 Forbidden` for all roles, including managers.
+   * **Audit Preservation on Task Deletion**: When a task document is deleted, timeline records are retained in the database as an indelible audit trail.
+
+---
 
 ### 5. `alertdismissals` (Overdue Alert Dismissals Collection)
 * `_id`: `ObjectId` (Primary Key)
@@ -76,15 +86,16 @@
   * **Unique Identifiers**: `User.email` and `Project.key` are backed by unique indexes in MongoDB, preventing accidental race-condition duplications.
   * **Required Fields**: Fields like `User.email`, `Project.key`, `Task.projectId`, and `Task.title` are strictly required by the Mongoose driver.
   * **Referential Constraints**: We use compound index `{ userId: 1, taskId: 1 }` on `AlertDismissal` to prevent duplicate dismissals.
-  * **Timeline Immutability**: Enforced via Mongoose pre-save middleware rejecting updates, updates with find, or deletions on the `TaskTimeline` model.
+  * **Timeline Immutability**: Enforced via Mongoose pre-save and pre-query middleware rejecting document saves on existing records, updates (`updateOne`, `updateMany`, `findOneAndUpdate`, `replaceOne`), and deletions (`deleteOne`, `deleteMany`, `findOneAndDelete`, `remove`).
 * **Application Level (Enforced via Express API Middleware/Controllers)**:
   * **Task Dependency Blockers**: The system prevents a task from moving to `Done` if any `Task.blockers` are not in the `Done` status. This is handled dynamically on state change.
   * **Allowed State Transitions**: The strict lifecycle state machine paths (e.g. rejecting direct jumps from Backlog to Done) are checked in application controllers.
   * **Project Membership Integrity**: Asserts that only users listed in `Project.members` can be added to `Task.assignees`.
-  * **Automatic Cascade Unassignment**: When a member is removed from a project, application logic automatically runs a query to pull their User ID from `Task.assignees` for all tasks under that project ID.
+  * **Automatic Cascade Unassignment**: When a member is removed from a project, application logic automatically runs a query to pull their User ID from `Task.assignees` for all tasks under that project ID and writes an `unassign` event to each task's timeline.
+  * **API Immutability Route Guards**: Explicitly rejects any HTTP `PUT` or `DELETE` request targeted at timeline events or comments with `403 Forbidden`.
 
 * **Why we drew the line here**:
-  Structural validations and unique constraints are best enforced by the database to ensure raw data integrity. Dynamic, stateful workflow rules (like task blockers and cascade deletions) are highly dependent on business definitions that change over time; enforcing them in the application layer keeps the database layer fast and agnostic.
+  Structural validations, unique constraints, and immutability are best enforced at the database/schema level so that accidental code paths cannot circumvent core guarantees. Dynamic, stateful workflow rules (like task blockers and cascade unassignments) require contextual multi-model business logic that belongs in the application service layer.
 
 ---
 

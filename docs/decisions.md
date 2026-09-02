@@ -87,3 +87,15 @@ Log of major technical and architectural decisions made during development.
   2. **Precision in Weekly Trend**: Using immutable audit timeline events (`TaskTimeline`) to determine exact completion timestamps instead of relying exclusively on `task.updatedAt` (which can change when descriptions or tags are edited post-completion).
   3. **Performance & Lightweight Payloads**: Pre-computing headline metrics and 8 weekly buckets reduces network payloads to a few kilobytes, ensuring instant dashboard rendering without client-side lag.
 
+---
+
+## Decision 10: Multi-Layer Immutability and Append-Only Event Log for Task History
+
+* **Chose**: Enforcing timeline immutability at both the database/schema level (Mongoose pre-middleware blocking `save` on existing records, `updateOne`, `updateMany`, `replaceOne`, `findOneAndUpdate`, `deleteOne`, `deleteMany`, `findOneAndDelete`, `remove`) and the Express HTTP layer (`403 Forbidden` guards on timeline and comment edit/delete routes for all roles, including managers).
+* **Rejected**: Merely hiding the "Edit" and "Delete" buttons in the browser interface.
+* **Why**:
+  1. **Audit & Compliance Rigor**: Real internal business tools must satisfy non-repudiation and auditability requirements. Relying on frontend visibility toggles leaves APIs vulnerable to direct HTTP manipulation via curl, Postman, or script execution.
+  2. **Zero Manager Exceptions**: Managers possess administrative rights to create/archive projects and remove tasks, but must never be permitted to alter or expunge audit records. Enforcing this at the database and API level ensures managers cannot rewrite who broke a build or missed a milestone.
+  3. **Unified Append-Only Feed**: Treating comments as typed timeline events (`type: 'comment'`) within the same append-only collection guarantees that discussions can never be retroactively revised or removed, preserving the exact conversational context alongside status transitions and assignments.
+
+
