@@ -64,8 +64,7 @@ function DashboardShell({ user, onLogout }) {
       {/* Sidebar Navigation */}
       <aside className="sidebar-nav">
         <div className="sidebar-brand">
-          <span className="logo-emoji">🎯</span>
-          <h2>Tracker Pro</h2>
+          <h2>Project Tracker</h2>
         </div>
 
         {/* User Card */}

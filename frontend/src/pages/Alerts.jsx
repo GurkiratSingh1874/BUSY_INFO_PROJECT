@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, AlertTriangle, CheckCircle, Clock, User, ShieldAlert, Check, RotateCcw, Loader2 } from 'lucide-react';
+import { Bell, AlertTriangle, CheckCircle, Clock, User, ShieldAlert, Check, RotateCcw, Loader2, RefreshCw } from 'lucide-react';
 import TaskDetailsDrawer from '../components/TaskDetailsDrawer';
 
 function Alerts({ currentUser, onAlertCountChange }) {
@@ -118,8 +118,13 @@ function Alerts({ currentUser, onAlertCountChange }) {
           </div>
         </div>
 
-        <button onClick={fetchAlerts} className="btn-action-glass" disabled={loading}>
-          {loading ? <Loader2 size={16} className="spinner" /> : 'Refresh'}
+        <button
+          onClick={fetchAlerts}
+          className="btn-icon-only"
+          title="Refresh Overdue Alerts"
+          disabled={loading}
+        >
+          <RefreshCw size={16} className={loading ? 'spinner' : ''} />
         </button>
       </div>
 

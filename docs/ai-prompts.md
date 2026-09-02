@@ -692,6 +692,67 @@ This document logs the exact prompts used to direct the AI assistant during deve
 * Added dual-layer invalidation (proactive `deleteMany` on update + reactive `associatedDueDate` matching in query) so alert reactivation on due date change has zero reliance on fragile background message queues.
 * Enforced assignee check on dismiss route to prevent unassigned managers or teammates from dismissing tickets they do not own.
 
+---
 
+## 11. Strict Review and Comprehensive Audit of All 10 Mandatory Goals
 
+### Prompt given
+> Now stop adding features.
+> 
+> Act as a strict reviewer evaluating this project against the ORIGINAL README.md.
+> 
+> Go through all 10 mandatory goals ONE BY ONE.
+> 
+> Create a checklist:
+> 
+> Goal 1:
+> Requirement → PASS/FAIL
+> Evidence → ...
+> Test → ...
+> 
+> Goal 2:
+> Requirement → PASS/FAIL
+> ...
+> 
+> Do not give me a vague "everything works."
+> Actually test the application.
+> 
+> Pay special attention to:
+> - server-side authorization
+> - member project visibility
+> - illegal task transitions
+> - dependency blocking
+> - reopening completed tasks
+> - project-member assignment restrictions
+> - removing project member unassigning tasks
+> - server-side filtering/pagination
+> - bulk actions returning per-task results
+> - filtered CSV export
+> - dashboard calculations
+> - immutable history
+> - overdue alert dismissal/reappearance
+> 
+> Find and fix failures.
+> If a requirement is genuinely incomplete, tell me rather than pretending it works.
+> 
+> After fixing issues:
+> - rerun the checklist
+> - update documentation
+> - commit fixes
+> - push
 
+### What was produced
+* **Master Verification Test Suite** (`backend/tests/strict_review.js`):
+  * Comprehensive end-to-end evaluation script directly interrogating the live API and MongoDB Atlas across all 10 mandatory requirements.
+  * Verified server-side authorization, member isolation, illegal transitions, blocker dependencies, cascade unassignment, server-side search/filters/pagination, per-task bulk results, CSV export, dashboard calculations, immutable history hooks, and overdue alert dismissal/reactivation.
+* **API Flexibility & Symmetry Refinements**:
+  * Added `PATCH` support alongside `PUT` on `/api/projects/:id/archive`, and enabled explicit `{ isArchived: boolean }` parameter support.
+  * Normalized bulk payload handling in `POST /api/tasks/bulk` to seamlessly accept both `{ action, payload: { ... } }` and `{ action, value: ... }`.
+  * Normalized comment payload handling in `POST /api/tasks/:id/comments` to accept both `{ commentText }` and `{ text }`.
+* **All 10 Mandatory Goals Passed**:
+  * Ran `strict_review.js` with 10/10 PASS result.
+  * All 7 existing test suites (`npm test`) continue to pass 100%.
+
+### What you corrected
+* Discovered that `/api/projects/:id/archive` only listened for `PUT`; added `PATCH` to support REST client conventions.
+* Added fallback parameter parsing in bulk actions and comments to handle different client payload formats gracefully.

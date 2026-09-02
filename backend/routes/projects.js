@@ -146,17 +146,21 @@ router.put('/:id', protect, authorize('manager'), async (req, res) => {
   }
 });
 
-// @desc    Toggle project archive status
-// @route   PUT /api/projects/:id/archive
+// @desc    Toggle or set project archive status
+// @route   PUT, PATCH /api/projects/:id/archive
 // @access  Private/Manager
-router.put('/:id/archive', protect, authorize('manager'), async (req, res) => {
+const handleArchiveToggle = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) {
       return res.status(404).json({ success: false, error: 'Project not found' });
     }
 
-    project.isArchived = !project.isArchived;
+    if (req.body && typeof req.body.isArchived === 'boolean') {
+      project.isArchived = req.body.isArchived;
+    } else {
+      project.isArchived = !project.isArchived;
+    }
     await project.save();
 
     res.status(200).json({
@@ -167,7 +171,10 @@ router.put('/:id/archive', protect, authorize('manager'), async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error toggling project archive status: ' + error.message });
   }
-});
+};
+
+router.put('/:id/archive', protect, authorize('manager'), handleArchiveToggle);
+router.patch('/:id/archive', protect, authorize('manager'), handleArchiveToggle);
 
 // @desc    Add member to project
 // @route   POST /api/projects/:id/members

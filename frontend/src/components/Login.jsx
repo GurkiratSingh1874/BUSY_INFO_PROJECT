@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, AlertTriangle, Loader2, Shield, User } from 'lucide-react';
+import { Lock, Mail, AlertTriangle, Loader2 } from 'lucide-react';
 
 function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -39,12 +39,6 @@ function Login({ onLoginSuccess }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickFill = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError(null);
   };
 
   return (
@@ -111,42 +105,6 @@ function Login({ onLoginSuccess }) {
             )}
           </button>
         </form>
-
-        {/* Quick Demo Credentials for Fast Testing / Review */}
-        <div className="login-demo-panel">
-          <span className="demo-panel-label">Quick Demo Accounts</span>
-          <div className="demo-accounts-grid">
-            <button
-              type="button"
-              onClick={() => handleQuickFill('manager@example.com', 'manager123')}
-              className="btn-demo-pill"
-              title="Click to fill Manager credentials"
-            >
-              <Shield size={12} />
-              <span>Manager</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickFill('member1@example.com', 'member123')}
-              className="btn-demo-pill"
-              title="Click to fill Alice (Member) credentials"
-            >
-              <User size={12} />
-              <span>Alice</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickFill('member2@example.com', 'member123')}
-              className="btn-demo-pill"
-              title="Click to fill Bob (Member) credentials"
-            >
-              <User size={12} />
-              <span>Bob</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

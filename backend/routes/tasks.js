@@ -326,8 +326,13 @@ router.post('/bulk', protect, async (req, res) => {
     });
   }
 
-  if (!payload || typeof payload !== 'object') {
-    return res.status(400).json({ success: false, error: 'payload object is required' });
+  let bulkPayload = payload;
+  if (!bulkPayload && req.body.value !== undefined) {
+    bulkPayload = { [action]: req.body.value };
+  }
+
+  if (!bulkPayload || typeof bulkPayload !== 'object') {
+    return res.status(400).json({ success: false, error: 'payload object (or value) is required' });
   }
 
   const results = [];
@@ -365,7 +370,7 @@ router.post('/bulk', protect, async (req, res) => {
 
       // 1. Bulk Status Change
       if (action === 'status') {
-        const newStatus = payload.status;
+        const newStatus = bulkPayload.status;
         if (!newStatus) {
           results.push({
             taskId: id,
@@ -437,7 +442,7 @@ router.post('/bulk', protect, async (req, res) => {
 
       // 2. Bulk Assignees Change
       if (action === 'assignees') {
-        const newAssignees = payload.assignees;
+        const newAssignees = bulkPayload.assignees;
         if (!Array.isArray(newAssignees)) {
           results.push({
             taskId: id,
@@ -501,8 +506,8 @@ router.post('/bulk', protect, async (req, res) => {
 
       // 3. Bulk Due Date Change
       if (action === 'dueDate') {
-        const newDueDate = payload.dueDate ? new Date(payload.dueDate) : null;
-        if (payload.dueDate && isNaN(newDueDate.getTime())) {
+        const newDueDate = bulkPayload.dueDate ? new Date(bulkPayload.dueDate) : null;
+        if (bulkPayload.dueDate && isNaN(newDueDate.getTime())) {
           results.push({
             taskId: id,
             title: task.title,
@@ -864,7 +869,7 @@ router.delete('/:id', protect, authorize('manager'), async (req, res) => {
 // @route   POST /api/tasks/:id/comments
 // @access  Private
 router.post('/:id/comments', protect, async (req, res) => {
-  const { commentText } = req.body;
+  const commentText = req.body.commentText || req.body.text;
 
   if (!commentText) {
     return res.status(400).json({ success: false, error: 'Comment text is required' });

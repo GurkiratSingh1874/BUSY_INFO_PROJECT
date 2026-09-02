@@ -109,5 +109,13 @@ Log of major technical and architectural decisions made during development.
   2. **Guaranteed Reappearance on Date Edits**: Storing `associatedDueDate` ensures that if a task's due date shifts, the old dismissal date immediately mismatches the new date, reviving the alert automatically even if proactive database cleanup failed.
   3. **Strict Assignee Isolation**: Scoping dismissals per `{ userId, taskId }` gives assignees individual control over their alerts without silencing notifications for other teammates on multi-assigned tasks. Non-assigned users and unassigned managers are strictly blocked from dismissing tasks they are not responsible for.
 
+---
 
+## Decision 12: Robust API Input Normalization and HTTP Method Symmetry
 
+* **Chose**: Implementing dual payload normalization (`bulkPayload = payload || { [action]: value }`, `commentText = req.body.commentText || req.body.text`) and supporting symmetric HTTP verbs (`PUT` and `PATCH` for project archiving).
+* **Rejected**: Strict single-shape schemas that reject standard client integration formats with 400 Bad Request.
+* **Why**:
+  1. **Integration Resilience**: Different API clients, test harnesses, and UI components naturally send either flat payload formats (`{ action: 'status', value: 'done' }`) or nested structures (`{ action: 'status', payload: { status: 'done' } }`). Normalizing on the server eliminates brittle friction without compromising data validation.
+  2. **HTTP Verb Conventions**: REST clients frequently use `PATCH` for partial state updates (like archiving a project) and `PUT` for complete state replacement. Allowing both verbs on `/api/projects/:id/archive` ensures standard compliance.
+  3. **Explicit State vs Toggle**: Allowing both an explicit boolean flag (`{ isArchived: true/false }`) and toggle behavior (if omitted) ensures idempotent updates in automated workflows while maintaining convenience for UI toggle buttons.
