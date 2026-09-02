@@ -4,7 +4,7 @@
   "description": "Unified full-stack Project & Task Tracking application",
   "main": "backend/server.js",
   "scripts": {
-    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install",
+    "build": "npm --prefix frontend install --include=dev --no-save && npm --prefix frontend run build && npm --prefix backend install --no-save",
     "start": "node backend/server.js",
     "seed": "node backend/utils/demo_seed.js",
     "test": "npm --prefix backend test"
