@@ -98,4 +98,16 @@ Log of major technical and architectural decisions made during development.
   2. **Zero Manager Exceptions**: Managers possess administrative rights to create/archive projects and remove tasks, but must never be permitted to alter or expunge audit records. Enforcing this at the database and API level ensures managers cannot rewrite who broke a build or missed a milestone.
   3. **Unified Append-Only Feed**: Treating comments as typed timeline events (`type: 'comment'`) within the same append-only collection guarantees that discussions can never be retroactively revised or removed, preserving the exact conversational context alongside status transitions and assignments.
 
+---
+
+## Decision 11: Dual-Layer State Invalidation for Overdue Alert Dismissals
+
+* **Chose**: Embedding `associatedDueDate` in `AlertDismissal` documents alongside proactive `deleteMany` cleanup whenever a task's `dueDate` changes.
+* **Rejected**: Building a complex event-driven notification queue or messaging bus.
+* **Why**:
+  1. **Zero State Drift**: Overdue status is an intrinsic derived property of task state (`dueDate < now && status !== 'done'`). By querying the database directly rather than generating transient notification events, alerts can never become stale, duplicated, or desynchronized across browser tabs.
+  2. **Guaranteed Reappearance on Date Edits**: Storing `associatedDueDate` ensures that if a task's due date shifts, the old dismissal date immediately mismatches the new date, reviving the alert automatically even if proactive database cleanup failed.
+  3. **Strict Assignee Isolation**: Scoping dismissals per `{ userId, taskId }` gives assignees individual control over their alerts without silencing notifications for other teammates on multi-assigned tasks. Non-assigned users and unassigned managers are strictly blocked from dismissing tasks they are not responsible for.
+
+
 

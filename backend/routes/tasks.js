@@ -3,6 +3,7 @@ const Task = require('../models/Task');
 const Project = require('../models/Project');
 const User = require('../models/User');
 const TaskTimeline = require('../models/TaskTimeline');
+const AlertDismissal = require('../models/AlertDismissal');
 const { protect, authorize, verifyProjectAccess } = require('../middleware/auth');
 const { validateTransition, checkBlockerDependencies } = require('../utils/lifecycle');
 const { logTimelineEvent } = require('../utils/timeline');
@@ -527,6 +528,9 @@ router.post('/bulk', protect, async (req, res) => {
             oldValue: oldDueDateStr,
             newValue: newDueDateStr,
           });
+
+          // Invalidate any existing alert dismissals so the alert reappears
+          await AlertDismissal.deleteMany({ taskId: task._id });
         }
 
         results.push({
@@ -815,6 +819,11 @@ router.put('/:id', protect, async (req, res) => {
             oldValue,
             newValue,
           });
+
+          // CRITICAL: When due date changes, alert dismissals must be invalidated so the alert reappears
+          if (field.name === 'dueDate') {
+            await AlertDismissal.deleteMany({ taskId: task._id });
+          }
         }
       }
     }

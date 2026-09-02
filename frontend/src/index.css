@@ -2845,6 +2845,411 @@ body {
   font-size: 0.85rem;
 }
 
+/* ==========================================================================
+   Overdue Alerts Styles (README Goal 10)
+   ========================================================================== */
+.tab-label-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-tab-alerts {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-alerts-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  line-height: 1.4;
+}
+
+.header-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-bell-btn {
+  position: relative;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid hsl(var(--border-color));
+  color: hsl(var(--text-muted));
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.header-bell-btn:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.bell-has-alerts {
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.header-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+  border: 2px solid #0f172a;
+}
+
+/* Alerts Page Layout */
+.alerts-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.alerts-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.alerts-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.alerts-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alerts-subtitle {
+  font-size: 0.82rem;
+  color: hsl(var(--text-muted));
+  margin: 4px 0 0 0;
+}
+
+.empty-alerts-card {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-alerts-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.empty-alerts-card h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.empty-alerts-card p {
+  color: hsl(var(--text-muted));
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.alerts-count-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.alerts-count-tag {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.alerts-info-hint {
+  font-size: 0.78rem;
+  color: hsl(var(--text-muted));
+}
+
+.alerts-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.alert-task-card {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-left: 4px solid #ef4444;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
+}
+
+.alert-task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.alert-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.alert-card-project {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.project-name-label {
+  font-size: 0.78rem;
+  color: hsl(var(--text-muted));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-overdue-pill {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.alert-task-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.alert-task-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.alert-due-date {
+  font-size: 0.75rem;
+  color: #f87171;
+  font-weight: 600;
+}
+
+.alert-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+}
+
+.alert-assignees {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: hsl(var(--text-muted));
+  min-width: 0;
+}
+
+.alert-assignees span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.btn-dismiss-alert {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-dismiss-alert:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fff;
+}
+
+.badge-not-assigned {
+  font-size: 0.68rem;
+  color: hsl(var(--text-muted));
+  font-style: italic;
+}
+
+/* Dismissed Alerts Section */
+.dismissed-alerts-section {
+  margin-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-toggle-dismissed {
+  background: transparent;
+  border: none;
+  color: hsl(var(--text-muted));
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  padding: 4px 0;
+  transition: color 0.2s ease;
+}
+
+.btn-toggle-dismissed:hover {
+  color: #fff;
+}
+
+.dismissed-hint-text {
+  font-size: 0.74rem;
+  color: hsl(var(--text-muted));
+  margin: 0 0 10px 0;
+}
+
+.dismissed-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dismissed-alert-row {
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.dismissed-alert-row:hover {
+  opacity: 1;
+}
+
+.dismissed-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dismissed-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dismissed-due {
+  font-size: 0.72rem;
+  color: hsl(var(--text-muted));
+  flex-shrink: 0;
+}
+
+.btn-undismiss-alert {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid hsl(var(--border-color));
+  color: hsl(var(--text-muted));
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-undismiss-alert:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+
 
 
 

@@ -1,15 +1,35 @@
-import React, { useState } from 'react';
-import { LogOut, Folder, ListTodo, CheckSquare, LayoutDashboard } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LogOut, Folder, ListTodo, CheckSquare, LayoutDashboard, Bell } from 'lucide-react';
 import Dashboard from '../pages/Dashboard';
 import Projects from '../pages/Projects';
 import ProjectBoard from '../pages/ProjectBoard';
 import TaskList from '../pages/TaskList';
 import MyTasks from '../pages/MyTasks';
+import Alerts from '../pages/Alerts';
 
 function DashboardShell({ user, onLogout }) {
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'all-tasks' | 'my-tasks' | 'board'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'all-tasks' | 'my-tasks' | 'board' | 'alerts'
   const [selectedProject, setSelectedProject] = useState(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [alertCount, setAlertCount] = useState(0);
+
+  const fetchAlertCount = async () => {
+    try {
+      const res = await fetch('/api/alerts/count');
+      const data = await res.json();
+      if (data.success) {
+        setAlertCount(data.count || 0);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    fetchAlertCount();
+    const interval = setInterval(fetchAlertCount, 20000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogoutClick = async () => {
     setLogoutLoading(true);
@@ -111,6 +131,22 @@ function DashboardShell({ user, onLogout }) {
             <CheckSquare size={18} />
             <span>My Tasks</span>
           </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('alerts');
+              setSelectedProject(null);
+            }}
+            className={`nav-tab-btn nav-tab-alerts ${activeTab === 'alerts' ? 'tab-active' : ''}`}
+          >
+            <div className="tab-label-with-icon">
+              <Bell size={18} />
+              <span>Overdue Alerts</span>
+            </div>
+            {alertCount > 0 && (
+              <span className="nav-alerts-badge">{alertCount}</span>
+            )}
+          </button>
         </nav>
 
         {/* Sidebar Footer Logout */}
@@ -132,6 +168,22 @@ function DashboardShell({ user, onLogout }) {
           <div className="system-status-indicator">
             <span className="dot dot-active"></span>
             <span className="status-label">Live Atlas Connected</span>
+          </div>
+
+          <div className="header-right-actions">
+            <button
+              onClick={() => {
+                setActiveTab('alerts');
+                setSelectedProject(null);
+              }}
+              className={`header-bell-btn ${alertCount > 0 ? 'bell-has-alerts' : ''}`}
+              title="Overdue Alerts"
+            >
+              <Bell size={18} />
+              {alertCount > 0 && (
+                <span className="header-bell-badge">{alertCount}</span>
+              )}
+            </button>
           </div>
         </header>
 
@@ -166,6 +218,13 @@ function DashboardShell({ user, onLogout }) {
 
           {activeTab === 'my-tasks' && (
             <MyTasks currentUser={user} />
+          )}
+
+          {activeTab === 'alerts' && (
+            <Alerts
+              currentUser={user}
+              onAlertCountChange={setAlertCount}
+            />
           )}
         </div>
       </div>

@@ -61,9 +61,15 @@
 * `_id`: `ObjectId` (Primary Key)
 * `userId`: `ObjectId` (Required, ref: `users`, Indexed) - User who dismissed the alert.
 * `taskId`: `ObjectId` (Required, ref: `tasks`, Indexed) - Task alert dismissed.
-* `associatedDueDate`: `Date` (Required) - Stores the task's due date at the time of dismissal. Used to verify reset on due date modification.
-* `createdAt`: `Date`
+* `associatedDueDate`: `Date` (Required) - Stores the task's exact due date at the moment of dismissal.
+* `createdAt`: `Date` (Timestamp of dismissal)
 * `updatedAt`: `Date`
+
+#### Why Alert Dismissal is Modeled This Way:
+1. **Per-Assignee State Isolation**: The requirement states that individual assigned users can dismiss alerts for their tasks. Storing dismissals in a dedicated junction collection (`userId` + `taskId`) allows one assigned team member to dismiss their alert notification without silencing alerts for other assignees on the same task.
+2. **Compound Unique Index**: `AlertDismissalSchema.index({ userId: 1, taskId: 1 }, { unique: true })` prevents race condition duplicates while enabling sub-millisecond lookup times when loading user alert counts.
+3. **Deterministic Due-Date Invalidation**: By embedding `associatedDueDate`, the query layer can evaluate alert validity with zero ambiguity: if `new Date(alertDismissal.associatedDueDate).getTime() !== new Date(task.dueDate).getTime()`, the dismissal is automatically considered stale/invalid. In addition, single and bulk due date update routes proactively run `AlertDismissal.deleteMany({ taskId: task._id })`, providing dual-layer reliability for alert reappearance.
+4. **Strict Assignee Authorization**: Validated in `POST /api/alerts/:taskId/dismiss` to guarantee that only users whose IDs are present in `task.assignees` can silence alerts. Non-assigned members and unassigned managers receive `403 Forbidden`.
 
 ---
 

@@ -628,5 +628,70 @@ This document logs the exact prompts used to direct the AI assistant during deve
 * Added audit logging for cascade unassignments when a member is removed from a project in `backend/routes/projects.js`.
 * Enhanced `TaskDetailsDrawer.jsx` to render both `oldValue` and `newValue` for unassignment events.
 
+---
+
+## 10. Overdue Alerts & Invalidation (README Goal 10)
+
+### Prompt
+> Implement README goal 10 exactly.
+> 
+> Tasks that:
+> - are past their due date
+> - and are not finished
+> 
+> should appear in an alerts area.
+> 
+> Show an alert count badge in navigation.
+> 
+> A person can dismiss an alert for a task they are assigned to.
+> 
+> IMPORTANT RULE:
+> 
+> If the task's due date later changes, the alert must become visible again.
+> 
+> Design the simplest reliable way to represent this.
+> 
+> Do not create a complicated notification system.
+> 
+> Make sure:
+> - unfinished overdue task → alert
+> - Done task → no overdue alert
+> - assigned user can dismiss
+> - unassigned user cannot dismiss
+> - changing the due date causes the dismissed alert to reappear
+> 
+> Test all of these cases.
+> 
+> Update documentation.
+> 
+> Commit and push.
+
+### What you got
+* **Overdue Alerts API** (`backend/routes/alerts.js`):
+  * `GET /api/alerts`: Scopes tasks to projects the user can access (`members: req.user._id` for members; active projects for managers). Filters for overdue unfinished tasks (`dueDate < now && status !== 'done'`). Maps user dismissals with exact `associatedDueDate` checks to classify tasks as `activeAlerts` vs `dismissedAlerts`.
+  * `GET /api/alerts/count`: Fast lightweight count endpoint powering the navigation badge.
+  * `POST /api/alerts/:taskId/dismiss`: Enforces that only users assigned to the task can dismiss alerts. Non-assigned members and unassigned managers receive `403 Forbidden`. Upserts `AlertDismissal` recording the current `associatedDueDate`.
+  * `POST /api/alerts/:taskId/undismiss`: Enables assigned users to manually restore a previously dismissed alert.
+* **Dual-Layer Due-Date Invalidation**:
+  * In `backend/routes/tasks.js`: Whenever a task's `dueDate` changes (via single task update or bulk operation), `AlertDismissal.deleteMany({ taskId: task._id })` proactively cleans up dismissals.
+  * In `backend/routes/alerts.js`: Matching `new Date(alertDismissal.associatedDueDate).getTime() === new Date(task.dueDate).getTime()` guarantees that any due date change immediately revives the alert even before cleanup runs.
+* **Frontend Overdue Alerts Area** (`frontend/src/pages/Alerts.jsx`):
+  * Displays active overdue cards with project key, task title, days overdue pill, priority, and assignees.
+  * "Dismiss Alert" button for assigned contributors with instant state refresh.
+  * "Only assignees can dismiss" indicator for unassigned viewers.
+  * Collapsible section for previously dismissed alerts with "Restore Alert" option.
+  * Task drawer integration to view details/timeline upon clicking any alert card.
+* **Navigation Badges** (`frontend/src/components/DashboardShell.jsx`):
+  * "Overdue Alerts" navigation item in the sidebar with red count badge.
+  * Header bell button with notification badge showing active overdue count in real time.
+* **Automated Test Suite** (`backend/tests/alerts.test.js`):
+  * 8 integration tests covering overdue generation, completed task exclusion, assigned user dismissal, unassigned user 403 rejection, due date change alert revival, and task reopening restoration.
+* Updated `docs/schema.md`, `docs/decisions.md` (Decision 11), and `backend/package.json`.
+
+### What you corrected
+* Added dual-layer invalidation (proactive `deleteMany` on update + reactive `associatedDueDate` matching in query) so alert reactivation on due date change has zero reliance on fragile background message queues.
+* Enforced assignee check on dismiss route to prevent unassigned managers or teammates from dismissing tickets they do not own.
+
+
 
 
