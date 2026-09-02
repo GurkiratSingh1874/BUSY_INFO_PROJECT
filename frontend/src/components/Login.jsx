@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, AlertTriangle, Loader2 } from 'lucide-react';
+import { Lock, Mail, AlertTriangle, Loader2, Shield, User } from 'lucide-react';
 
 function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -41,29 +41,37 @@ function Login({ onLoginSuccess }) {
     }
   };
 
+  const handleQuickFill = (demoEmail, demoPassword) => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError(null);
+  };
+
   return (
     <div className="login-card-wrapper">
       <div className="glass-card login-card">
-        <div className="header">
-          <div className="logo-badge">
-            <Lock />
+        {/* Brand & Header Section */}
+        <div className="login-header">
+          <div className="login-logo-badge">
+            <Lock size={22} className="login-lock-icon" />
           </div>
-          <h1>Sign In</h1>
-          <p className="subtitle">Project & Task Tracker</p>
+          <h1 className="login-title">Sign In</h1>
+          <p className="login-subtitle">Project & Task Tracker</p>
         </div>
 
         {error && (
-          <div className="error-alert">
-            <AlertTriangle className="error-icon" />
+          <div className="error-alert login-error-alert">
+            <AlertTriangle className="error-icon" size={18} />
             <span>{error}</span>
           </div>
         )}
 
+        {/* Form Section */}
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
             <div className="input-wrapper">
-              <Mail className="input-icon" />
+              <Mail className="input-icon" size={16} />
               <input
                 type="email"
                 id="email"
@@ -79,7 +87,7 @@ function Login({ onLoginSuccess }) {
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <div className="input-wrapper">
-              <Lock className="input-icon" />
+              <Lock className="input-icon" size={16} />
               <input
                 type="password"
                 id="password"
@@ -92,17 +100,53 @@ function Login({ onLoginSuccess }) {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn-primary btn-login-submit" disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="spinner" />
-                Signing In...
+                <Loader2 className="spinner" size={16} />
+                <span>Signing In...</span>
               </>
             ) : (
-              'Sign In'
+              <span>Sign In</span>
             )}
           </button>
         </form>
+
+        {/* Quick Demo Credentials for Fast Testing / Review */}
+        <div className="login-demo-panel">
+          <span className="demo-panel-label">Quick Demo Accounts</span>
+          <div className="demo-accounts-grid">
+            <button
+              type="button"
+              onClick={() => handleQuickFill('manager@example.com', 'manager123')}
+              className="btn-demo-pill"
+              title="Click to fill Manager credentials"
+            >
+              <Shield size={12} />
+              <span>Manager</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickFill('member1@example.com', 'member123')}
+              className="btn-demo-pill"
+              title="Click to fill Alice (Member) credentials"
+            >
+              <User size={12} />
+              <span>Alice</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickFill('member2@example.com', 'member123')}
+              className="btn-demo-pill"
+              title="Click to fill Bob (Member) credentials"
+            >
+              <User size={12} />
+              <span>Bob</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
