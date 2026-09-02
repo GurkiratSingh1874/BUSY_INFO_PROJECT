@@ -29,7 +29,7 @@ const STATUS_CONFIG = {
   blocked: { label: 'Blocked', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
 };
 
-function Dashboard({ currentUser, onNavigateToTasks, onNavigateToProjects }) {
+function Dashboard({ currentUser, onNavigateToTasks, onNavigateToProjects, onNavigateToAlerts }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -157,7 +157,17 @@ function Dashboard({ currentUser, onNavigateToTasks, onNavigateToProjects }) {
         </div>
 
         {/* 2. Overdue Tasks */}
-        <div className={`metric-card metric-overdue glass-card ${summary.overdueTasks > 0 ? 'border-danger' : ''}`}>
+        <div
+          className={`metric-card metric-overdue glass-card ${
+            summary.overdueTasks > 0 ? 'border-danger metric-card-interactive' : ''
+          }`}
+          onClick={() => {
+            if (summary.overdueTasks > 0 && onNavigateToAlerts) {
+              onNavigateToAlerts();
+            }
+          }}
+          title={summary.overdueTasks > 0 ? 'Click to view overdue alerts' : 'No overdue tasks'}
+        >
           <div className="metric-card-header">
             <span className="metric-label">Overdue Tasks</span>
             <div className="metric-icon-badge icon-rose">
@@ -171,6 +181,12 @@ function Dashboard({ currentUser, onNavigateToTasks, onNavigateToProjects }) {
             <p className="metric-caption">
               {summary.overdueTasks > 0 ? 'Requires urgent attention' : 'No overdue tasks'}
             </p>
+            {summary.overdueTasks > 0 && onNavigateToAlerts && (
+              <div className="metric-interactive-hint">
+                <span>View Alerts</span>
+                <ArrowUpRight size={12} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -282,6 +298,8 @@ function Dashboard({ currentUser, onNavigateToTasks, onNavigateToProjects }) {
                 {byAssignee.map((item) => {
                   const pct = totalTasks > 0 ? Math.round((item.count / totalTasks) * 100) : 0;
                   const isUnassigned = item.userId === 'unassigned';
+                  const avgTasks = totalTasks / Math.max(byAssignee.length, 1);
+                  const isHeavyLoad = !isUnassigned && item.count >= Math.max(Math.ceil(avgTasks * 1.35), 4);
                   return (
                     <div key={item.userId} className="assignee-row">
                       <div className="assignee-info">
@@ -296,7 +314,14 @@ function Dashboard({ currentUser, onNavigateToTasks, onNavigateToProjects }) {
                                 .toUpperCase()}
                         </div>
                         <div className="assignee-text">
-                          <span className="assignee-name">{item.name}</span>
+                          <div className="flex-align-gap">
+                            <span className="assignee-name">{item.name}</span>
+                            {isHeavyLoad && (
+                              <span className="workload-tag-heavy" title="Above average active task load">
+                                Heavy Load
+                              </span>
+                            )}
+                          </div>
                           {item.email && <span className="assignee-email">{item.email}</span>}
                         </div>
                       </div>

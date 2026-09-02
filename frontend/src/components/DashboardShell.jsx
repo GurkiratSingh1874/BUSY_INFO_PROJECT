@@ -188,6 +188,7 @@ function DashboardShell({ user, onLogout }) {
               currentUser={user}
               onNavigateToTasks={() => setActiveTab('all-tasks')}
               onNavigateToProjects={() => setActiveTab('projects')}
+              onNavigateToAlerts={() => setActiveTab('alerts')}
             />
           )}
 

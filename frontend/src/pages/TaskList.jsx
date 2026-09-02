@@ -518,7 +518,7 @@ function TaskList({ currentUser }) {
               disabled={bulkLoading}
               className="btn-primary"
             >
-              {bulkLoading ? <Loader2 size={16} className="spinner" /> : <Sparkles size={16} />}
+              {bulkLoading ? <Loader2 size={16} className="spinner" /> : <CheckSquare size={16} />}
               <span>Apply to Selected</span>
             </button>
 

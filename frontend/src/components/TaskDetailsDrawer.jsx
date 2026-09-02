@@ -314,6 +314,60 @@ function TaskDetailsDrawer({ isOpen, taskId, onClose, projectMembers, currentUse
                 </div>
               )}
 
+              {/* Overdue Attention Banner */}
+              {task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done' && (
+                <div className="attention-banner-overdue">
+                  <AlertCircle size={16} />
+                  <span>
+                    <strong>Past Deadline:</strong> Due date was {new Date(task.dueDate).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
+              {/* Blocked Attention Banner */}
+              {task.status === 'blocked' && (
+                <div className="attention-banner-blocked">
+                  <ShieldAlert size={16} />
+                  <span>
+                    <strong>Task Blocked:</strong> Resolve unresolved dependencies to resume this task.
+                  </span>
+                </div>
+              )}
+
+              {/* Lifecycle Pipeline Stepper */}
+              <div className="lifecycle-stepper">
+                {[
+                  { id: 'backlog', label: 'Backlog' },
+                  { id: 'in_progress', label: 'In Progress' },
+                  { id: 'in_review', label: 'In Review' },
+                  { id: 'done', label: 'Done' },
+                ].map((step, idx) => {
+                  const stepsOrder = ['backlog', 'in_progress', 'in_review', 'done'];
+                  const currentIdx = stepsOrder.indexOf(task.status);
+                  const isCurrent = task.status === step.id;
+                  const isComplete = currentIdx > idx || task.status === 'done';
+                  const isBlocked = task.status === 'blocked' && step.id === 'in_progress';
+
+                  return (
+                    <React.Fragment key={step.id}>
+                      <div
+                        className={`stepper-step ${isCurrent ? 'step-current' : ''} ${
+                          isComplete ? 'step-done' : ''
+                        } ${isBlocked ? 'step-blocked' : ''}`}
+                      >
+                        <div className="stepper-dot" />
+                        <span>{step.label}</span>
+                      </div>
+                      {idx < 3 && (
+                        <div
+                          className={`stepper-connector ${currentIdx > idx ? 'connector-done' : ''}`}
+                        />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+
               {/* Status transition action row */}
               {!editMode && renderTransitionButtons()}
 

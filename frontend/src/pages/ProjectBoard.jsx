@@ -127,12 +127,18 @@ function ProjectBoard({ project, onBack, currentUser }) {
                     colTasks.map(task => {
                       const hasBlockers = task.blockers?.length > 0;
                       const hasDueDate = !!task.dueDate;
+                      const isOverdue =
+                        hasDueDate &&
+                        new Date(task.dueDate) < new Date() &&
+                        task.status !== 'done';
 
                       return (
                         <div
                           key={task._id}
                           onClick={() => handleTaskClick(task._id)}
-                          className={`task-card-item card-dark priority-border-${task.priority}`}
+                          className={`task-card-item card-dark priority-border-${task.priority} ${
+                            isOverdue ? 'card-has-overdue' : ''
+                          }`}
                         >
                           <h5 className="task-card-title">{task.title}</h5>
 
@@ -158,7 +164,11 @@ function ProjectBoard({ project, onBack, currentUser }) {
                             </div>
 
                             {hasDueDate && (
-                              <span className="task-card-due-tag">
+                              <span
+                                className={`task-card-due-tag ${isOverdue ? 'tag-overdue' : ''}`}
+                                title={isOverdue ? 'Task is past due' : 'Scheduled due date'}
+                              >
+                                {isOverdue ? '! ' : ''}
                                 {new Date(task.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                               </span>
                             )}
