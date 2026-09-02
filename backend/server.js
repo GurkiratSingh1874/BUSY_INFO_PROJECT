@@ -2,7 +2,8 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-require('dotenv').config();
+const mongoose = require('mongoose');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const connectDB = require('./config/db');
 const seedUsers = require('./utils/seed');
@@ -41,9 +42,13 @@ app.use('/api/alerts', require('./routes/alerts'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
   res.json({
-    status: 'ok',
-    message: 'Backend server is healthy and running',
+    status: isDbConnected ? 'ok' : 'db_disconnected',
+    message: isDbConnected
+      ? 'Backend server is healthy and connected to MongoDB'
+      : 'Backend server is running but waiting for MongoDB connection',
+    dbState: mongoose.connection.readyState,
     timestamp: new Date().toISOString()
   });
 });
@@ -81,7 +86,8 @@ app.get('*', (req, res) => {
   });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Start Server explicitly listening on 0.0.0.0 for container hosting (Render)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT} (0.0.0.0)`);
 });
+
