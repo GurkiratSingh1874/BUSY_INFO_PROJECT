@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { LogOut, Folder, ListTodo, CheckSquare } from 'lucide-react';
+import { LogOut, Folder, ListTodo, CheckSquare, LayoutDashboard } from 'lucide-react';
+import Dashboard from '../pages/Dashboard';
 import Projects from '../pages/Projects';
 import ProjectBoard from '../pages/ProjectBoard';
 import TaskList from '../pages/TaskList';
 import MyTasks from '../pages/MyTasks';
 
 function DashboardShell({ user, onLogout }) {
-  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'all-tasks' | 'my-tasks' | 'board'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'projects' | 'all-tasks' | 'my-tasks' | 'board'
   const [selectedProject, setSelectedProject] = useState(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
@@ -69,6 +70,17 @@ function DashboardShell({ user, onLogout }) {
         <nav className="nav-tabs-list">
           <button
             onClick={() => {
+              setActiveTab('dashboard');
+              setSelectedProject(null);
+            }}
+            className={`nav-tab-btn ${activeTab === 'dashboard' ? 'tab-active' : ''}`}
+          >
+            <LayoutDashboard size={18} />
+            <span>Dashboard</span>
+          </button>
+
+          <button
+            onClick={() => {
               setActiveTab('projects');
               setSelectedProject(null);
             }}
@@ -124,6 +136,14 @@ function DashboardShell({ user, onLogout }) {
         </header>
 
         <div className="main-panel-content">
+          {activeTab === 'dashboard' && (
+            <Dashboard
+              currentUser={user}
+              onNavigateToTasks={() => setActiveTab('all-tasks')}
+              onNavigateToProjects={() => setActiveTab('projects')}
+            />
+          )}
+
           {activeTab === 'projects' && (
             <Projects
               currentUser={user}

@@ -2354,5 +2354,497 @@ body {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+/* ==========================================================================
+   Dashboard Styles (README Goal 8)
+   ========================================================================== */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.dashboard-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-scope-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.scope-icon {
+  position: absolute;
+  left: 12px;
+  color: hsl(var(--cyan));
+  pointer-events: none;
+}
+
+.dashboard-project-select {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid hsl(var(--border-color));
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 14px 8px 36px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.dashboard-project-select:focus {
+  outline: none;
+  border-color: hsl(var(--cyan));
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+/* 4 Headline Metrics Grid */
+.headline-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .headline-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .headline-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metric-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 120px;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.metric-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: hsl(var(--text-muted));
+  letter-spacing: 0.05em;
+}
+
+.metric-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-blue {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.icon-rose {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.icon-amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.icon-emerald {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.metric-card-body {
+  text-align: left;
+}
+
+.metric-number {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-caption {
+  font-size: 0.78rem;
+  color: hsl(var(--text-muted));
+  margin: 0;
+}
+
+.border-danger {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+.text-rose {
+  color: #f87171 !important;
+}
+
+.text-emerald {
+  color: #34d399 !important;
+}
+
+.text-cyan {
+  color: #38bdf8 !important;
+}
+
+/* Main Analytics Two Column Layout */
+.dashboard-grid-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .dashboard-grid-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-column-gap {
+  gap: 20px;
+}
+
+.dashboard-panel-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 14px;
+}
+
+.panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.panel-title-wrap h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.panel-subtitle {
+  font-size: 0.75rem;
+  color: hsl(var(--text-muted));
+  margin: 2px 0 0 0;
+}
+
+.total-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: hsl(var(--text-muted));
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* Status Breakdown */
+.status-progress-composite {
+  width: 100%;
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.status-progress-segment {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.status-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.status-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.status-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.status-item-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-count {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.status-pct {
+  font-size: 0.78rem;
+  color: hsl(var(--text-muted));
+  width: 36px;
+  text-align: right;
+}
+
+/* Assignee Workload List */
+.assignee-workload-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.assignee-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.3);
+}
+
+.assignee-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.assignee-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #334155;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-unassigned {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.assignee-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.assignee-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assignee-email {
+  font-size: 0.68rem;
+  color: hsl(var(--text-muted));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assignee-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.assignee-bar-wrap {
+  width: 70px;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.assignee-bar-fill {
+  height: 100%;
+  background: hsl(var(--cyan));
+  border-radius: 3px;
+}
+
+.assignee-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  min-width: 55px;
+  text-align: right;
+}
+
+/* 8-Week Completions Velocity Chart */
+.velocity-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.velocity-number {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #38bdf8;
+  line-height: 1;
+}
+
+.velocity-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: hsl(var(--text-muted));
+  letter-spacing: 0.05em;
+}
+
+.chart-container-box {
+  margin: 10px 0;
+  min-height: 320px;
+}
+
+.chart-custom-tooltip {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  text-align: left;
+}
+
+.tooltip-week {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 2px 0;
+}
+
+.tooltip-dates {
+  font-size: 0.72rem;
+  color: hsl(var(--text-muted));
+  margin: 0 0 6px 0;
+}
+
+.tooltip-value {
+  font-size: 0.82rem;
+  color: #38bdf8;
+  margin: 0;
+}
+
+.chart-footer-summary {
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+
+.footer-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.footer-metric-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: hsl(var(--text-muted));
+}
+
+.footer-metric-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.empty-panel-text {
+  padding: 30px;
+  text-align: center;
+  color: hsl(var(--text-muted));
+  font-size: 0.85rem;
+}
+
+
 
 

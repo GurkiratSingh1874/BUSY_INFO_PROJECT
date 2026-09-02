@@ -76,3 +76,14 @@ Log of major technical and architectural decisions made during development.
   2. **Transparent Feedback**: An itemized report clearly communicates what succeeded and why specific items were rejected, allowing users to address the blocker dependencies without re-doing the rest of their work.
   3. **Strict Policy Compliance**: Each individual task is subjected to the full suite of state machine validation, blocker checks, assignee project membership rules, and immutable timeline logging, preventing any bulk backdoor around business logic.
 
+---
+
+## Decision 9: Scoped Server-Side Aggregation for Operational Dashboard
+
+* **Chose**: Performing headline metrics computation, weekly completion bucketing, status breakdowns, and assignee workloads directly on the backend (`/api/dashboard`) using role-based project scoping.
+* **Rejected**: Fetching raw task lists to the client and computing analytics in React state.
+* **Why**:
+  1. **Strict Access Isolation**: Members must only see data from projects they are assigned to. Computing metrics on the server guarantees that non-member project data is never transmitted over the network or exposed in memory.
+  2. **Precision in Weekly Trend**: Using immutable audit timeline events (`TaskTimeline`) to determine exact completion timestamps instead of relying exclusively on `task.updatedAt` (which can change when descriptions or tags are edited post-completion).
+  3. **Performance & Lightweight Payloads**: Pre-computing headline metrics and 8 weekly buckets reduces network payloads to a few kilobytes, ensuring instant dashboard rendering without client-side lag.
+

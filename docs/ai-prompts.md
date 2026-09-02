@@ -493,3 +493,63 @@ This document logs the exact prompts used to direct the AI assistant during deve
 * Fixed `checkBlockerDependencies` property inspection in the bulk controller: updated check to inspect `blockerCheck.isBlocked` and format blocker titles instead of looking for an absent `canComplete` flag.
 * Refactored timeline logging in `/bulk` to use `logTimelineEvent` with the required `userId` field to satisfy Mongoose schema constraints.
 
+---
+
+## 8. Implementing Executive Dashboard & Visualizations (README Goal 8)
+
+### Prompt
+> Implement README goal 8.
+> 
+> Create a useful but simple dashboard.
+> 
+> It must show:
+> - open tasks
+> - overdue tasks
+> - tasks due this week
+> - tasks completed this week
+> 
+> Also show task breakdown:
+> - by status
+> - by assignee
+> 
+> And a completion chart for the last 8 weeks.
+> 
+> The dashboard should respect the user's permissions:
+> - managers can see the portfolio they manage/access
+> - members should only see information from projects they are allowed to see
+> 
+> Prefer simple queries and simple charts.
+> 
+> Do not add fancy analytics that are not required.
+> 
+> Make the dashboard visually polished enough to look like a real internal business tool, but don't spend excessive time on animations or decorative UI.
+> 
+> Verify all numbers against database data.
+> 
+> Update documentation.
+> 
+> Commit and push.
+
+### What you got
+* **Dashboard Aggregation Endpoint** (`GET /api/dashboard` in `backend/routes/dashboard.js`):
+  * Scoped to user permissions: Managers see active projects; members are strictly scoped to their assigned project memberships (and receive `403 Forbidden` if querying unassigned project dashboards).
+  * Calculates headline numbers: Open Tasks, Overdue Tasks, Tasks Due This Week, and Tasks Completed This Week.
+  * Calculates Status Breakdown with counts and labels for all 5 lifecycle states.
+  * Calculates Assignee Workload Distribution including unassigned task counts.
+  * Computes 8-week completion trends using exact completion timestamps from immutable `TaskTimeline` records (falling back to `updatedAt`).
+* **Interactive Frontend Dashboard** (`frontend/src/pages/Dashboard.jsx`):
+  * Primary landing view in `DashboardShell.jsx`.
+  * 4 headline stat cards (Open, Overdue with red alert badge, Due This Week, and Completed This Week).
+  * Project portfolio scope selector to toggle between all accessible projects or specific project views.
+  * Composite status progress bar and itemized status rows with percentages.
+  * Contributor workload list with user avatars, task counts, and proportion bars.
+  * Recharts 8-week bar chart with custom dark theme tooltips showing weekly delivery velocity.
+* **Automated Test Suite** (`backend/tests/dashboard.test.js`):
+  * Verifies headline numbers, status breakdown counts, assignee workloads, 8-week completion grouping, and member permission isolation.
+* Updated `docs/decisions.md` (Decision 9) and `docs/ai-prompts.md`.
+
+### What you corrected
+* Implemented Monday-to-Sunday rolling week bucketing to cleanly calculate "Due This Week", "Completed This Week", and the 8-week completion bar chart.
+* Used audit timeline timestamps (`TaskTimeline`) to isolate true task completion dates from subsequent metadata edits.
+
+
