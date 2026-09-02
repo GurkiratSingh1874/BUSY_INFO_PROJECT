@@ -165,11 +165,6 @@ function DashboardShell({ user, onLogout }) {
       {/* Main Panel Content Area */}
       <div className="main-panel">
         <header className="main-panel-header">
-          <div className="system-status-indicator">
-            <span className="dot dot-active"></span>
-            <span className="status-label">Live Atlas Connected</span>
-          </div>
-
           <div className="header-right-actions">
             <button
               onClick={() => {
