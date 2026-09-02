@@ -121,7 +121,7 @@ router.get('/', protect, async (req, res) => {
     if (sortBy === 'dueDate') {
       sortObj = { dueDate: sortDirection, createdAt: -1 };
     } else if (sortBy === 'priority') {
-      sortObj = { priority: sortDirection, updatedAt: -1 };
+      sortObj = { priorityWeight: sortDirection, updatedAt: -1 };
     } else if (sortBy === 'createdAt') {
       sortObj = { createdAt: sortDirection };
     } else {
@@ -247,7 +247,7 @@ router.get('/export/csv', protect, async (req, res) => {
     if (sortBy === 'dueDate') {
       sortObj = { dueDate: sortDirection, createdAt: -1 };
     } else if (sortBy === 'priority') {
-      sortObj = { priority: sortDirection, updatedAt: -1 };
+      sortObj = { priorityWeight: sortDirection, updatedAt: -1 };
     } else if (sortBy === 'createdAt') {
       sortObj = { createdAt: sortDirection };
     } else {

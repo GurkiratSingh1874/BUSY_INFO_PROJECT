@@ -416,6 +416,9 @@ function TaskList({ currentUser }) {
                 } else if (val === 'priority_desc') {
                   setSortBy('priority');
                   setOrder('desc');
+                } else if (val === 'priority_asc') {
+                  setSortBy('priority');
+                  setOrder('asc');
                 }
                 setPage(1);
               }}
@@ -425,6 +428,7 @@ function TaskList({ currentUser }) {
               <option value="dueDate_asc">Due Date (Earliest)</option>
               <option value="dueDate_desc">Due Date (Latest)</option>
               <option value="priority_desc">Priority (High to Low)</option>
+              <option value="priority_asc">Priority (Low to High)</option>
             </select>
           </div>
 

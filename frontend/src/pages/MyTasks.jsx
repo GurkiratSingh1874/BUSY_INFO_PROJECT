@@ -198,6 +198,9 @@ function MyTasks({ currentUser }) {
               } else if (val === 'priority_desc') {
                 setSortBy('priority');
                 setOrder('desc');
+              } else if (val === 'priority_asc') {
+                setSortBy('priority');
+                setOrder('asc');
               } else if (val === 'updatedAt_desc') {
                 setSortBy('updatedAt');
                 setOrder('desc');
@@ -209,6 +212,7 @@ function MyTasks({ currentUser }) {
             <option value="dueDate_asc">Due Date (Earliest)</option>
             <option value="dueDate_desc">Due Date (Latest)</option>
             <option value="priority_desc">Priority (High to Low)</option>
+            <option value="priority_asc">Priority (Low to High)</option>
             <option value="updatedAt_desc">Last Updated</option>
           </select>
 

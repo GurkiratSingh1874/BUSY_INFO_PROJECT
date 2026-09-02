@@ -11,8 +11,16 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to Database and Seed Users
-connectDB().then(() => {
-  seedUsers();
+connectDB().then(async () => {
+  await seedUsers();
+  try {
+    const Task = require('./models/Task');
+    await Task.updateMany({ priority: 'high', priorityWeight: { $ne: 3 } }, { $set: { priorityWeight: 3 } });
+    await Task.updateMany({ priority: 'medium', priorityWeight: { $ne: 2 } }, { $set: { priorityWeight: 2 } });
+    await Task.updateMany({ priority: 'low', priorityWeight: { $ne: 1 } }, { $set: { priorityWeight: 1 } });
+  } catch (err) {
+    console.error('Priority sync error:', err.message);
+  }
 });
 
 // Middleware
