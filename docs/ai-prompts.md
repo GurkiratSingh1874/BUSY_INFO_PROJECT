@@ -756,3 +756,33 @@ This document logs the exact prompts used to direct the AI assistant during deve
 ### What you corrected
 * Discovered that `/api/projects/:id/archive` only listened for `PUT`; added `PATCH` to support REST client conventions.
 * Added fallback parameter parsing in bulk actions and comments to handle different client payload formats gracefully.
+
+---
+
+## 12. UI Aesthetics, Login Refinements & Brand Simplification
+
+### Prompts given
+> this is login page make it appearance right its not looking right u can see text its not looking good
+
+> everthing is ok just remove quick demo accouts from login page
+
+> in overdue alerts on top right there is refresh written don't looking good remove that or do somethign else and don't push this change on github
+
+> on top left of website where written tracker pro remove icon and write only project tracker name
+
+### What was produced
+* **Login Form Typography & Spacing Fix**:
+  * Root cause identified: global CSS reset `margin: 0` caused the lock icon, "Sign In" title, "Project & Task Tracker" subtitle, and "Email Address" label to collapse directly against each other with zero vertical margin.
+  * Added distinct `.login-header` container (`margin-bottom: 28px`), styled `.login-logo-badge` (`48px x 48px`), bold `.login-title` (`1.65rem`), and muted `.login-subtitle`.
+  * Form inputs styled with comfortable padding and smooth focus rings.
+* **Removal of Demo Accounts Scaffolding**:
+  * Removed the quick-fill demo accounts panel (`login-demo-panel`) based on user feedback to keep the interface realistic and free from synthetic demo scaffolding.
+* **Overdue Alerts Header Polish**:
+  * Replaced the plain `"Refresh"` text button in `Alerts.jsx` with a subtle, icon-only button (`<RefreshCw size={16} />`) matching the dashboard headers.
+* **Brand Simplification**:
+  * Removed the target emoji (`🎯`) and renamed `"Tracker Pro"` to clean `"Project Tracker"` in `DashboardShell.jsx`.
+
+### What you corrected
+* Fixed collapsed vertical margins on the login page by creating explicit container hierarchy and spacing classes rather than relying on browser default margins.
+* Removed artificial demo helpers (quick demo accounts) and distracting decorative text buttons upon user direction.
+

@@ -1,59 +1,96 @@
-# Architecture
+# Architecture Documentation
 
-## What are the moving pieces, and how do they talk to each other?
+## System Components & Communication
 
-The system is composed of three primary layers communicating over standard protocols:
+The application is architected as a decoupled, full-stack client-server system organized into three core layers:
 
-1. **Frontend Presentation Layer (Single Page Application)**:
-   * Built with **React** and styled using **Vanilla CSS** with HSL variables. It runs entirely in the user's web browser.
-   * Talk to the backend by making asynchronous HTTP requests (`fetch` API) to JSON REST endpoints prefixed with `/api`.
-   * Sessions are authenticated using **JSON Web Tokens (JWT)** sent securely via HTTP-Only cookies.
-
-2. **Backend Application Layer (REST API Server)**:
-   * Built using **Node.js** and **Express.js**.
-   * Exposes RESTful API endpoints for authentication, project administration, task operations, bulk actions, and dashboard analytics.
-   * Serves compiled static frontend production files (`frontend/dist/`) under the root route.
-   * Middleware intercepts `/api` routes to decode JWT cookies, verify roles (Manager vs. Member), and enforce project boundary limits.
-
-3. **Database Layer (Document Store)**:
-   * Powered by **MongoDB** and integrated via the **Mongoose ORM**.
-   * Stores five collections: `users`, `projects`, `tasks`, `tasktimelines` (append-only history), and `alertdismissals`.
-   * Enforces structural constraints (unique emails, project keys) and indexes common search pathways (project ID, task status, due dates).
-
----
-
-## Where does each piece run?
-
-* **Local Development Environment**:
-  * **Frontend**: Runs locally on `http://localhost:5173`, served by the Vite dev server. It includes a dev proxy that forwards `/api` requests to the backend server.
-  * **Backend**: Runs on `http://localhost:5000`, started by Node.js.
-  * **Database**: Runs locally via MongoDB (port 27017) or connects to a remote MongoDB Atlas sandbox cluster.
-
-* **Production Deployed Environment**:
-  * **Frontend & Backend (Unified Service)**: Build output from the React Vite client (`frontend/dist`) is copied to the backend root directory. A single Web Service instance on **Render** runs the Node/Express backend on port 5000, serving the static frontend resources and the REST API from the same process.
-  * **Database**: A managed cloud cluster on **MongoDB Atlas** (Free Tier).
-
----
-
-## What is the request path for one representative user action, end to end?
-
-Let's trace **"Retrieving My Tasks"** for a logged-in Member:
-
-1. **User Action**: The member clicks on the "My Tasks" link in the navigation sidebar.
-2. **Browser (React)**: The routing component renders the `MyTasks` view. It triggers a `useEffect` hook that fires a `GET /api/tasks?assignee=current_user_id` query to the Express server.
-3. **Backend Network (Express)**: The Express router captures the request and passes it to the `protect` authentication middleware.
-4. **Backend Authentication (JWT Middleware)**: The middleware reads the HTTP-Only cookie `token`, verifies it using `JWT_SECRET`, decodes the payload, queries the `User` database model, and attaches the user model to `req.user`.
-5. **Backend Authorization (Task Router)**: The task router handler checks the client role. Because the user is a `member`, the router queries the `Project` model to retrieve all project IDs where `req.user._id` is in the `members` array.
-6. **Database Query (MongoDB)**: Express queries Mongoose:
-   `Task.find({ assignees: req.user._id, projectId: { $in: userProjectIds } })`
-   MongoDB filters the indexed task collection and returns the documents.
-7. **Response Serialization**: The backend formats the list of tasks as a JSON array and sends a `200 OK` response with headers.
-8. **Browser Render (React)**: The React component receives the JSON array, sets it in local state via `useState`, and maps it into a grid of clean task detail cards.
+```
+┌─────────────────────────────────────────────────────────────┐
+│             Frontend Presentation Layer (Browser)           │
+│  - React 18 SPA (Vite)                                      │
+│  - Client Views: Dashboard, Projects, Board, List, Alerts   │
+│  - CSS Custom Properties (Theme, Status Tints, Tabular Nums)│
+└──────────────────────────────┬──────────────────────────────┘
+                               │ HTTPS / JSON REST (fetch)
+                               │ Credentials: HTTP-Only JWT Cookie
+┌──────────────────────────────▼──────────────────────────────┐
+│             Backend Application Layer (Node.js/Express)     │
+│  - REST API Routes (/api/auth, /api/projects, /api/tasks,   │
+│    /api/dashboard, /api/alerts)                             │
+│  - Middleware: JWT Authentication (`protect`),             │
+│    Role-based Authorization (`authorize`),                 │
+│    Project Access Boundaries (`verifyProjectAccess`)        │
+│  - Business Domain Engines: Lifecycle State Machine,        │
+│    Blocker Dependency Graph, Bulk Pipeline, Alert Resolver  │
+│  - Static Asset Server (Serves frontend/dist in production) │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Mongoose ODM / TLS connection
+┌──────────────────────────────▼──────────────────────────────┐
+│             Persistence Layer (MongoDB Atlas Cluster)       │
+│  - Collections: users, projects, tasks, tasktimelines,      │
+│    alertdismissals                                          │
+│  - Indexes: Unique (email, key), Compound (userId + taskId),│
+│    Foreign keys (projectId, assignees, dueDate)             │
+│  - Database Middleware: Pre-save/pre-query mutation hooks  │
+│    enforcing append-only immutability on history records   │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## What did you decide *not* to build, and why?
+## Where Each Piece Runs
 
-1. **Public Self-Registration / Signup Screen**: We opted to seed standard roles (`manager@example.com` and `member1@example.com`) directly on server start. This keeps authentication simple, fits the internal tracker scope, and saves about 1 hour of setup time.
-2. **Global State Manager (Redux/Zustand)**: We decided to manage state with local React state and standard fetch triggers. Avoiding boilerplate state libraries keeps the codebase easy to read, maintain, and explain in an interview.
-3. **Microservices / Split Hosting**: Placing frontend and backend in separate hosting accounts (e.g. Vercel + Render) was rejected. Serving built frontend assets directly from Express as a single unit eliminates CORS config friction, speeds up development, and prevents multiple free-tier servers from sleeping independently.
+1. **Client Tier (Browser)**:
+   * **Local Development**: Runs on `http://localhost:5173` via Vite Dev Server with HMR and an API proxy rule forwarding `/api` calls to port 5000.
+   * **Production**: Pre-compiled into static HTML, JS, and CSS bundles (`frontend/dist/`) via `npm run build` and served directly by Express.
+2. **Server Tier (Node.js / Express)**:
+   * **Local Development**: Runs on `http://localhost:5000` via Node.js runtime.
+   * **Production**: Hosted as a single web service on Render, binding to `process.env.PORT`. Express serves both the REST API endpoints and static frontend assets from a single process.
+3. **Database Tier (MongoDB)**:
+   * **Local / Cloud**: Managed multi-tenant replica set hosted on **MongoDB Atlas** (Cluster `ac-56fntlt-shard-00-00.nm7cnhn.mongodb.net`) connected over TLS with SRV connection strings.
+
+---
+
+## Representative Request Flow End-to-End
+
+### Flow: Transitioning a Task to `Done` with Dependency Validation
+
+1. **User Action**: A team member drags or clicks to transition task `T-102` from `In Review` to `Done`.
+2. **Frontend Dispatch**:
+   * Component `TaskDetailsDrawer.jsx` dispatches `PUT /api/tasks/T-102` with payload `{ status: 'done' }` using `fetch()`, including credentials.
+3. **Authentication Layer**:
+   * Express intercepts the request via `protect` middleware (`middleware/auth.js`).
+   * Reads `token` from signed HTTP-Only cookies, verifies signature via `jwt.verify()`, and attaches `req.user` (`_id`, `role`, `email`).
+4. **Project Access & Membership Authorization**:
+   * Task router retrieves task `T-102` from MongoDB and inspects its `projectId`.
+   * For members, it verifies that `req.user._id` exists in `project.members`. If not, halts with `403 Forbidden`.
+5. **State Machine Validation**:
+   * Calls `validateTransition(task.status, 'done', task.preBlockedStatus)` (`utils/lifecycle.js`).
+   * Verifies that `in_review -> done` is a valid lifecycle transition.
+6. **Blocker Dependency Resolution**:
+   * Calls `checkBlockerDependencies(task._id)`.
+   * Queries MongoDB: `Task.find({ _id: { $in: task.blockers }, status: { $ne: 'done' } })`.
+   * If any blocker is unfinished (`status !== 'done'`), halts execution and returns `400 Bad Request` with an explanation: `"Cannot complete task: It is blocked by unfinished tasks: 'Auth Gateway' (in_progress)"`.
+7. **Database Persistence & Timeline Audit**:
+   * If all blockers are done, updates `task.status = 'done'`.
+   * Immediately writes an append-only timeline event into `tasktimelines`:
+     `{ taskId: task._id, type: 'field_change', fieldName: 'status', oldValue: 'in_review', newValue: 'done', userId: req.user._id }`.
+   * The Mongoose `TaskTimeline` schema executes its pre-save hook, confirming `this.isNew === true`.
+8. **Response & Client Render**:
+   * Returns `200 OK` with the updated task document and timeline event.
+   * React component updates local state, plays the transition animation, removes the task from the Overdue Alerts list, and re-renders the Kanban column.
+
+---
+
+## What We Deliberately Decided *Not* to Build, and Why
+
+1. **Public Self-Registration / Open Signup**:
+   * *Why*: This is an internal enterprise task tracker. Open signup is a security risk in multi-tenant client systems. Instead, standard accounts (`manager@example.com`, `member1@example.com`, `member2@example.com`) are automatically seeded on startup with predictable roles.
+2. **Heavy Global State Library (Redux, MobX)**:
+   * *Why*: The application is organized around domain-driven tabs (Dashboard, Projects, Board, List, My Tasks, Alerts). Local React state combined with standard `fetch` triggers keeps code readable, easy to trace, and avoids unnecessary bundle bloat.
+3. **WebSocket Real-Time Engine (Socket.io)**:
+   * *Why*: WebSockets introduce connection state management, reconnection retry logic, and memory leaks on free-tier hosting that spins down when idle. Instead, focused event-driven refetches (e.g., updating alert count on dismiss or task completion) deliver immediate UI responsiveness without WebSocket fragility.
+4. **Third-Party Charting Bloat (Recharts / Chart.js)**:
+   * *Why*: Heavy charting packages add ~500KB of client-side JavaScript. We implemented the 8-week completion chart and dashboard metric bars using native, responsive CSS flexbox bars and SVG geometry with semantic markup.
+5. **Background Redis Worker Queue for Overdue Alerts**:
+   * *Why*: Running separate Redis worker processes (e.g., BullMQ) is cost-prohibitive on free hosting and prone to desynchronization. Overdue status is an intrinsic derived property of task state (`dueDate < now && status !== 'done'`). Querying the database directly ensures zero state drift.

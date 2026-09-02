@@ -155,7 +155,7 @@ const runSearchFilterTests = async () => {
     const s1 = await makeRequest('/tasks?search=Authentication', { method: 'GET' }, managerCookie);
     assert.strictEqual(s1.status, 200);
     assert.ok(s1.data.data.some(t => t._id === taskAId), 'Search by title failed');
-    assert.strictEqual(s1.data.data.every(t => t.title.includes('Authentication') || t.description.includes('Authentication')), true);
+    assert.strictEqual(s1.data.data.every(t => t.title.toLowerCase().includes('authentication') || (t.description && t.description.toLowerCase().includes('authentication'))), true);
     console.log('✔ Search by title ("Authentication") returned correct match.');
 
     // Search for "decisions.md" (matches Task C description)

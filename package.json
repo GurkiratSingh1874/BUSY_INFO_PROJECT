@@ -1,0 +1,15 @@
+{
+  "name": "project-task-tracker",
+  "version": "1.0.0",
+  "description": "Unified full-stack Project & Task Tracking application",
+  "main": "backend/server.js",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install",
+    "start": "node backend/server.js",
+    "seed": "node backend/utils/demo_seed.js",
+    "test": "npm --prefix backend test"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
