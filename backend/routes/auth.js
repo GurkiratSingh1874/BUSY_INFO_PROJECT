@@ -14,10 +14,11 @@ const sendTokenResponse = (user, statusCode, res) => {
     { expiresIn: '7d' }
   );
 
+  const isProduction = process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Only HTTPS in prod
-    sameSite: 'strict',
+    secure: isProduction, // Only HTTPS in prod
+    sameSite: isProduction ? 'none' : 'lax', // 'none' ensures cross-origin and proxied cookies work reliably on Vercel & Render
   };
 
   res
@@ -70,10 +71,12 @@ router.post('/login', async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Private (but accessible to clear token)
 router.post('/logout', (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
   res.cookie('token', 'none', {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true,
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
   });
 
   res.status(200).json({
