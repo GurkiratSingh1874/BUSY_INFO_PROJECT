@@ -3,11 +3,12 @@
 ## Links
 
 - **GitHub repository:** https://github.com/GurkiratSingh1874/BUSY_INFO_PROJECT
-- **Live application:** https://project-tracker-pw16.onrender.com
+- **Live application (Vercel):** https://frontend-five-fawn-82.vercel.app
+- **Live application (Render):** https://project-tracker-pw16.onrender.com
 
 ## Notes for the reviewer
 
-* The application is built as a unified full-stack service: the Node.js/Express server exposes the REST API on `/api/*` and serves the compiled React production bundle from `frontend/dist/` under the root URL.
+* **Dual Deployment Architecture**: The application is deployed and verified on both **Vercel** (`https://frontend-five-fawn-82.vercel.app`) and **Render** (`https://project-tracker-pw16.onrender.com`), both communicating securely with MongoDB Atlas.
 * If testing on a cloud free-tier instance (e.g. Render), the server spins down when idle; the first cold-start request may take 30–50 seconds to initialize before subsequent requests respond in under 50ms.
 * Default accounts and test workspaces are seeded automatically on database startup.
 
