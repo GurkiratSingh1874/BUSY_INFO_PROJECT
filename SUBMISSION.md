@@ -3,12 +3,12 @@
 ## Links
 
 - **GitHub repository:** https://github.com/GurkiratSingh1874/BUSY_INFO_PROJECT
-- **Live application (Vercel):** https://frontend-five-fawn-82.vercel.app
+- **Live application (Vercel):** https://project-task-tracker-82.vercel.app
 - **Live application (Render):** https://project-tracker-pw16.onrender.com
 
 ## Notes for the reviewer
 
-* **Dual Deployment Architecture**: The application is deployed and verified on both **Vercel** (`https://frontend-five-fawn-82.vercel.app`) and **Render** (`https://project-tracker-pw16.onrender.com`), both communicating securely with MongoDB Atlas.
+* **Dual Deployment Architecture**: The application is deployed and verified on both **Vercel** (`https://project-task-tracker-82.vercel.app`) and **Render** (`https://project-tracker-pw16.onrender.com`), both communicating securely with MongoDB Atlas.
 * If testing on a cloud free-tier instance (e.g. Render), the server spins down when idle; the first cold-start request may take 30–50 seconds to initialize before subsequent requests respond in under 50ms.
 * Default accounts and test workspaces are seeded automatically on database startup.
 
