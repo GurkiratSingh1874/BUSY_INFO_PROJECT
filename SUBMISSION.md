@@ -3,7 +3,7 @@
 ## Links
 
 - **GitHub repository:** https://github.com/GurkiratSingh1874/BUSY_INFO_PROJECT
-- **Live application:** [REPLACE_WITH_DEPLOYED_URL_OR_RUN_LOCALLY_AT_HTTP://LOCALHOST:5000]
+- **Live application:** https://project-tracker-pw16.onrender.com
 
 ## Notes for the reviewer
 
