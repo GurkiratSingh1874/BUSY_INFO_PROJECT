@@ -1,85 +1,75 @@
 # Technical Decisions & Architectural Trade-offs
 
-This document records the actual technical decisions made during development, the rejected alternatives, the engineering rationale, and the associated trade-offs.
+This document outlines the real technical decisions made while building this project, what alternatives were considered, why each choice was made, and the trade-offs accepted.
 
 ---
 
-## Decision 1: Cookie-Based JWT Authentication vs. Authorization Headers
+## Decision 1: HTTP-Only Cookies for JWT vs. Browser LocalStorage
 
-* **What we chose**: Issuing JSON Web Tokens (JWT) stored inside signed, `httpOnly`, `sameSite: 'lax'` browser cookies.
-* **Alternatives considered**: Storing JWTs in browser `localStorage` or `sessionStorage` and transmitting them via `Authorization: Bearer <token>` headers.
-* **Why**:
-  1. **XSS Protection**: Tokens stored in `localStorage` are vulnerable to exfiltration by any injected third-party script. HTTP-only cookies cannot be accessed or read by client-side JavaScript.
-  2. **Zero Client Header Plumbing**: The browser automatically attaches cookies to every fetch request (`credentials: 'include'`), eliminating the need for complex Axios request interceptors or token refresh wrappers in React.
-* **Trade-offs**:
-  * Requires explicit CSRF awareness (`sameSite: 'lax'`) and credentials configuration in development proxies.
-
----
-
-## Decision 2: Strict Finite State Machine in Domain Service vs. Model Hooks
-
-* **What we chose**: Centralizing lifecycle transition validation (`backlog ➔ in_progress ➔ in_review ➔ done`, `blocked`, and reopening) inside a dedicated domain engine (`backend/utils/lifecycle.js`) called explicitly by task routers.
-* **Alternatives considered**: Embedding state transition rules inside Mongoose `pre('save')` hooks on the `Task` schema.
-* **Why**:
-  1. **Clear Explanations on Rejection**: README Goal 4 requires that invalid jumps be rejected with an explanation of *why* the jump was illegal and what transitions are legal. Mongoose schema hooks produce generic validation errors that are difficult to customize for HTTP responses.
-  2. **Multi-Model Dependency Context**: Verifying that all blocker tasks are `done` requires querying sibling tasks. Mongoose document middleware executing cross-collection queries introduces hidden side effects and complicates unit testing.
-* **Trade-offs**:
-  * Bulk operations and individual update endpoints must both explicitly invoke `validateTransition()` and `checkBlockerDependencies()`.
+* **What I chose**: Storing user JWT tokens inside signed, `httpOnly`, `sameSite: 'lax'` browser cookies sent from the backend on login.
+* **Alternatives considered**: Storing JWT tokens in the browser's `localStorage` and attaching them manually via an `Authorization: Bearer <token>` header on every request.
+* **Why I chose this**:
+  1. **Protection against XSS**: If any malicious script runs in the browser, it can easily access `localStorage.getItem('token')` and steal credentials. Client-side JavaScript cannot read `httpOnly` cookies at all.
+  2. **Cleaner frontend code**: The browser automatically sends cookies with every API call when using `credentials: 'include'`. I did not need to write complex request interceptors or token refresh wrappers in React.
+* **Trade-offs accepted**:
+  * Cross-origin requests require explicit cookie and CORS configuration, which requires careful handling between development and production.
 
 ---
 
-## Decision 3: Application Cascade Hook vs. MongoDB Database Triggers for Member Removal
+## Decision 2: State Machine Logic in a Dedicated Helper vs. Database Schema Hooks
 
-* **What we chose**: Executing an explicit Mongoose update (`Task.updateMany({ projectId }, { $pull: { assignees: userId } })`) within the project membership removal controller (`backend/routes/projects.js`).
-* **Alternatives considered**: Using MongoDB Database Triggers (Atlas App Services) or relying on manual frontend unassignment.
-* **Why**:
-  1. **Local Testability & Portability**: Database triggers depend on proprietary cloud configurations that cannot run inside local automated test environments (`npm test`). Application-layer cascade hooks run identically across local MongoDB instances and Atlas production clusters.
-  2. **Immediate Timeline Audit Logging**: Removing a member also generates `unassign` events in the immutable task history log. Doing this in the controller ensures timeline events are logged within the same request lifecycle.
-* **Trade-offs**:
-  * If a developer writes a raw MongoDB script bypassing the Express API, the cascade unassignment logic will not execute.
-
----
-
-## Decision 4: Server-Side Query Engine vs. Client-Side In-Memory Filtering
-
-* **What we chose**: Executing text search, multi-criteria filtering, custom sorting, and pagination entirely on the server using MongoDB query operators (`$regex`, `$in`, `$gte`, `$sort`, `$skip`, `$limit`).
-* **Alternatives considered**: Fetching the entire task portfolio to the browser and filtering with JavaScript array methods (`.filter()`, `.sort()`).
-* **Why**:
-  1. **Strict Permission Scoping**: Members must only see tasks from projects they belong to. Fetching everything to the client and filtering locally risks leaking confidential client project data in network payloads.
-  2. **Scalability**: While in-memory filtering feels snappy on 20 tasks, it collapses as the company grows to thousands of tasks across dozens of client engagements.
-* **Trade-offs**:
-  * Every filter toggle or pagination click requires a lightweight network round-trip.
+* **What I chose**: Writing the task status progression (`Backlog ➔ In Progress ➔ In Review ➔ Done`) inside a standalone helper file (`backend/utils/lifecycle.js`) that my route handlers call directly.
+* **Alternatives considered**: Putting the transition checks inside Mongoose `pre('save')` hooks on the Task schema.
+* **Why I chose this**:
+  1. **Clear error feedback**: The requirement states that illegal status moves must explain *why* they failed and what moves are allowed. Mongoose schema hooks produce generic validation errors that are clunky to turn into friendly HTTP error messages.
+  2. **Checking blocker tasks**: Moving a task to `Done` requires checking if other blocker tasks are already completed. Doing database queries for other tasks inside a Mongoose schema hook creates hidden side effects and makes unit testing difficult.
+* **Trade-offs accepted**:
+  * Any route that updates task status (single update or bulk update) must remember to explicitly call `validateTransition()` and `checkBlockerDependencies()`.
 
 ---
 
-## Decision 5: Multi-Layer Immutability for Task History and Comments
+## Decision 3: Application-Level Cascade Updates vs. MongoDB Cloud Triggers
 
-* **What we chose**: Enforcing history immutability at both the database schema level (Mongoose pre-middleware rejecting `save` on existing records, `updateOne`, `updateMany`, `replaceOne`, `findOneAndUpdate`, `deleteOne`, `deleteMany`, `findOneAndDelete`, `remove`) and the Express HTTP layer (`403 Forbidden` guards on timeline/comment routes for all roles, including managers).
+* **What I chose**: When a member is removed from a project, my Express route immediately runs an update query (`Task.updateMany`) to remove their ID from all tasks in that project, and writes an unassignment event to the task timeline.
+* **Alternatives considered**: Using MongoDB Atlas Database Triggers or Atlas Cloud Functions to watch for changes and clean up tasks automatically.
+* **Why I chose this**:
+  1. **Works anywhere without cloud setup**: Cloud triggers depend on proprietary MongoDB Atlas settings. Writing the logic in Express means the app can be cloned and run locally by any reviewer without needing special cloud configurations.
+  2. **Instant audit logs**: Running the update in the controller ensures timeline events are logged at the exact same moment the member is removed from the project.
+* **Trade-offs accepted**:
+  * If someone modifies the database directly using a raw script outside of the Express API, the automatic unassignment won't trigger.
+
+---
+
+## Decision 4: Multi-Layer Immutability for Audit History and Comments
+
+* **What I chose**: Protecting history and comments in two separate layers: in the Express API routes (returning `403 Forbidden` if anyone tries to edit or delete a timeline record) AND in Mongoose schema hooks (rejecting any `update` or `delete` query at the database level).
 * **Alternatives considered**: Simply hiding the "Edit" and "Delete" buttons in the React UI.
-* **Why**:
-  1. **True Non-Repudiation**: Hiding buttons in the interface offers zero protection against direct HTTP requests (`curl`, Postman, browser DevTools). A real business tool requires that audit records cannot be tampered with by anyone, including managers.
-  2. **Unified Append-Only Model**: Modeling comments as typed events (`type: 'comment'`) within the same append-only collection guarantees that conversational context cannot be retroactively altered.
-* **Trade-offs**:
-  * Users cannot correct typographical errors in comments once posted.
+* **Why I chose this**:
+  1. **Real security**: Hiding UI buttons does not prevent someone from using Postman or browser DevTools to send a direct `DELETE` or `PUT` request to `/api/tasks/:id/timeline/:timelineId`.
+  2. **Even managers cannot change history**: The specification explicitly requires that history cannot be edited, even by managers. Database-level hooks ensure that even accidental code or cascade operations cannot delete audit records.
+* **Trade-offs accepted**:
+  * If a user makes a typo in a comment, they cannot edit it—they have to write a new comment to clarify.
 
 ---
 
-## Decision 6: Dual-Layer State Invalidation for Overdue Alert Dismissals
+## Decision 5: REVERSED DECISION — Native CSS Flexbox Bar Chart vs. Heavy External Chart Library
 
-* **What we chose**: Storing `associatedDueDate` on `AlertDismissal` documents combined with proactive `AlertDismissal.deleteMany({ taskId })` cleanup on task due date changes.
-* **Alternatives considered**: Running a background cron job to periodically evaluate dismissed alerts, or using a Redis message queue.
-* **Why**:
-  1. **Zero State Drift**: Overdue status is an intrinsic derived property of task state (`dueDate < now && status !== 'done'`). Querying the database directly ensures alerts cannot become desynchronized or stale across browser tabs.
-  2. **Guaranteed Reappearance**: If a task's due date shifts, the stored `associatedDueDate` immediately mismatches the new date, causing the alert to reappear even if the proactive deletion failed.
-* **Trade-offs**:
-  * Requires an additional lightweight lookup in `alertdismissals` when rendering the alerts area.
+* **Initial Decision**: When building the 8-week completion chart on the dashboard, I initially installed an external charting library (`recharts`).
+* **Why I reversed it**:
+  * When inspecting the production build, `recharts` added over 400 KB of heavy JavaScript dependencies just to render 8 simple vertical bars.
+  * On free-tier cloud hosting and slower connections, this caused unnecessary bundle bloat and slower page loads.
+* **What I chose instead**: I reversed the decision, removed the external library, and built a custom responsive bar chart using standard HTML and CSS flexbox in `Dashboard.jsx`. Each bar's height is calculated cleanly as a percentage (`height: ${percentage}%`) with semantic tooltips.
+* **Trade-offs accepted**:
+  * I had to write the flexbox styling and tooltip positioning manually instead of using pre-built library components, but saved 400 KB of bundle size.
 
 ---
 
-## Decision 7: REVERSED DECISION — Ambient System Status Badges in the Header
+## Decision 6: REVERSED DECISION — Explicit Action Buttons & Drawer Stepper vs. Freeform Drag-and-Drop
 
-* **Initial Decision**: Added an ambient `.system-status-indicator` ("Live Atlas Connected") badge with a green pulsing dot to the top header in `DashboardShell.jsx` to communicate real-time database connectivity to the user.
-* **Why it was Reversed**:
-  * During application review and testing, the user explicitly provided feedback: *"at right top corner of website is showing live atlas connected can't it be hidden??"*.
-  * Upon reflection, showing database infrastructure details is developer noise that clutters the UI and distracts from core task management. Internal business users expect database connectivity to be an invisible baseline, not a decorative dashboard ornament.
-* **What we did**: Completely stripped the status indicator from `DashboardShell.jsx` and CSS, keeping the header clean, uncluttered, and focused purely on navigation and the Overdue Alerts bell badge.
+* **Initial Decision**: On the project Kanban board, I originally planned to let users drag cards between columns using a drag-and-drop library.
+* **Why I reversed it**:
+  * With strict lifecycle rules (`Backlog ➔ In Progress ➔ In Review ➔ Done`) and blocker dependencies, drag-and-drop creates a frustrating experience: if a user drags a card from Backlog directly to Done, or drags a blocked task, the card snaps back across the screen with an error.
+  * Drag-and-drop on mobile or trackpads is also clumsy and prone to accidental drops.
+* **What I chose instead**: I reversed the decision and built a sliding **Task Details Drawer** with an interactive visual stepper and explicit workflow action buttons (`Start Progress`, `Submit Review`, `Mark Done`, `Mark Blocked`). The drawer only illuminates and enables the exact legal transitions available from the current state.
+* **Trade-offs accepted**:
+  * Changing a task's state requires clicking to open the drawer instead of a quick freeform drag, but it completely eliminates confusing card snap-backs and accidental illegal moves.
